@@ -1,7 +1,10 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import CustomButton from '../../components/CustomButton';
+import FormField from '../../components/FormField';
 import { useGlobal } from '../../context/GlobalProvider';
 import { auth } from '../../lib/firebase';
 
@@ -9,6 +12,7 @@ export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const { user } = useGlobal();
 
   useEffect(() => {
@@ -17,11 +21,28 @@ export default function SignIn() {
     }
   }, [user]);
 
-  async function handleSignIn() {
-    if (!email || !password) {
-      Alert.alert('Erro', 'Preencha todos os campos');
-      return;
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email) {
+      newErrors.email = 'E-mail é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'E-mail inválido';
     }
+    
+    if (!password) {
+      newErrors.password = 'Senha é obrigatória';
+    } else if (password.length < 6) {
+      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  async function handleSignIn() {
+    if (!validateForm()) return;
+    
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -37,59 +58,69 @@ export default function SignIn() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Entrar</Text>
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" />
-      <TextInput placeholder="Senha" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-      <TouchableOpacity style={styles.button} onPress={handleSignIn} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/(auth)/sign-up')}>
-        <Text style={styles.linkText}>Não tem conta? Cadastre-se</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+    <ImageBackground 
+      source={require('../../assets/images/murilo.png')} 
+      className="flex-1"
+      resizeMode="cover"
+    >
+      <LinearGradient
+        colors={['rgba(70, 78, 78, 0.7)', 'rgba(5, 130, 246, 0.5)', 'rgba(50, 16, 100, 0.5)']}
+        className="flex-1"
+      >
+        <ScrollView 
+          className="flex-1 px-6"
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="mb-8">
+            <Text className="text-white font-pbold text-3xl mb-2">
+              Bem-vindo de volta!
+            </Text>
+            <Text className="text-blue-50 font-pregular text-base">
+              Faça login para continuar
+            </Text>
+          </View>
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  buttonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  linkButton: {
-    padding: 10,
-  },
-  linkText: {
-    color: '#007AFF',
-    textAlign: 'center',
-    fontSize: 16,
-  },
-}); 
+          <View className="space-y-4">
+            <FormField
+              label="E-mail"
+              placeholder="Digite seu e-mail"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={errors.email}
+            />
+
+            <FormField
+              label="Senha"
+              placeholder="Digite sua senha"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              error={errors.password}
+            />
+
+            <CustomButton
+              title={loading ? 'Entrando...' : 'Entrar'}
+              onPress={handleSignIn}
+              loading={loading}
+              className="mt-6"
+            />
+
+            <View className="mt-6 flex-row justify-center items-center">
+              <Text className="text-blue-50 font-pregular text-base">
+                Não tem uma conta?{' '}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
+                <Text className="text-secondary font-pbold text-base">
+                  Criar conta
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </LinearGradient>
+    </ImageBackground>
+  );
+} 
