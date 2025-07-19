@@ -224,7 +224,7 @@ export default function Agendar() {
               <View key={horario} className="bg-white rounded-lg p-4 mb-3 shadow-sm">
                 <View className="flex-row items-center justify-between mb-3">
                   <Text className="text-gray-800 font-pbold text-lg">
-                    {horario === '06:00' ? '06:00 AM' : '06:00 PM'}
+                    {horario === '06:00' ? '06:00 AM' : '18:00 PM'}
                   </Text>
                   <Text className="text-gray-500 font-pregular text-sm">
                     {alunos.length}/8 alunos
