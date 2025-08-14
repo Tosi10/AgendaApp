@@ -38,7 +38,7 @@ AgendaApp/
 │   └── _layout.jsx              # Layout raiz com carregamento de fontes
 ├── components/
 │   ├── M2Coin.jsx               # Componente para exibir M2 Coins
-│   ├── BackgroundLogo.jsx       # Componente de fundo
+│   ├── BackgroundLogo.jsx       # Componente de fundo (removido)
 │   ├── FormField.jsx            # Campo de formulário
 │   └── CustomButton.jsx         # Botão personalizado
 ├── context/

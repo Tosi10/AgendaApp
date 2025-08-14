@@ -28,7 +28,7 @@ export default function M2Coin({ size = 24, coins = 0, showCount = true, color =
       
       {showCount && (
         <View className="ml-2">
-          <Text className="text-yellow-600 font-pextrabold text-xl">
+          <Text className="text-yellow-600 font-pextrabold text-5xl">
             {coins}
           </Text>
           <Text className="text-yellow-500 font-pbold text-sm">
