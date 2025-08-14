@@ -5,17 +5,14 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#f59e0b',
-        tabBarInactiveTintColor: '#6b7280',
+        tabBarActiveTintColor: '#ffffff',
+        tabBarInactiveTintColor: '#93c5fd',
         tabBarStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: '#1e40af',
           borderTopWidth: 1,
-          borderTopColor: '#e5e7eb',
+          borderTopColor: '#1e3a8a',
         },
-        headerStyle: {
-          backgroundColor: '#1e3a8a',
-        },
-        headerTintColor: '#ffffff',
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -45,6 +42,16 @@ export default function TabsLayout() {
           tabBarLabel: 'Chat',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubbles" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="perfil"
+        options={{
+          title: 'Perfil',
+          tabBarLabel: 'Perfil',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
           ),
         }}
       />

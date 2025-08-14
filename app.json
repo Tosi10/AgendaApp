@@ -1,49 +1,37 @@
 {
   "expo": {
-    "name": "Agendamento",
-    "slug": "Agendamento",
+    "name": "AgendaApp",
+    "slug": "agendaapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "agendamento",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "icon": "./assets/images/M2_1.png",
+    "userInterfaceStyle": "light",
+    "scheme": "agendaapp",
+    "splash": {
+      "image": "./assets/images/M2_3.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E40AF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/images/M2_1.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/M2_2.png",
+        "backgroundColor": "#1E40AF"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.v6core.Agendamento"
+      "icon": "./assets/images/M2_1.png",
+      "package": "com.m2academia.agendaapp"
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/M2_1.png"
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "c8520b34-e17c-4792-928f-39a6a79d5484"
-      }
-    }
+      "expo-router"
+    ]
   }
 }

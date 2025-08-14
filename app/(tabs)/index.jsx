@@ -65,7 +65,7 @@ export default function Home() {
   return (
     <ScrollView className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="bg-blue-600 px-6 py-4">
+      <View className="bg-blue-600 px-6 py-16">
         <Text className="text-white font-pbold text-xl">
           Bem-vindo, {user?.email?.split('@')[0]}!
         </Text>

@@ -110,7 +110,7 @@ export default function Chat() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
-      <View className="bg-blue-600 px-6 py-4">
+      <View className="bg-blue-600 px-6 py-16">
         <Text className="text-white font-pbold text-xl text-center">
           Chat do Grupo
         </Text>
