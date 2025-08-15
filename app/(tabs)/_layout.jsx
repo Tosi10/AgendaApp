@@ -1,7 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useGlobal } from '../../context/GlobalProvider';
 
 export default function TabsLayout() {
+  const { setCurrentTab, triggerResetHistorico } = useGlobal();
+
+  const handleTabPress = (tabName) => {
+    setCurrentTab(tabName);
+    // Resetar histórico quando mudar para a aba Perfil
+    if (tabName === 'perfil') {
+      triggerResetHistorico();
+    }
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -24,6 +35,9 @@ export default function TabsLayout() {
             <Ionicons name="home" size={size} color={color} />
           ),
         }}
+        listeners={{
+          tabPress: () => handleTabPress('home'),
+        }}
       />
       <Tabs.Screen
         name="agendar"
@@ -33,6 +47,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => handleTabPress('agendar'),
         }}
       />
       <Tabs.Screen
@@ -44,6 +61,9 @@ export default function TabsLayout() {
             <Ionicons name="chatbubbles" size={size} color={color} />
           ),
         }}
+        listeners={{
+          tabPress: () => handleTabPress('chat'),
+        }}
       />
       <Tabs.Screen
         name="perfil"
@@ -53,6 +73,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => handleTabPress('perfil'),
         }}
       />
     </Tabs>

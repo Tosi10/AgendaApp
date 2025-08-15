@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { collection, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import LoadingScreen from '../../components/LoadingScreen';
@@ -31,6 +31,16 @@ export default function Perfil() {
   const [showPlanoModal, setShowPlanoModal] = useState(false);
   const [usuarioEditandoPlano, setUsuarioEditandoPlano] = useState(null);
   const [editandoPlano, setEditandoPlano] = useState(false);
+  
+  // Estados para edição de tipo de usuário
+  const [showTipoUsuarioModal, setShowTipoUsuarioModal] = useState(false);
+  const [usuarioEditandoTipo, setUsuarioEditandoTipo] = useState(null);
+  const [editandoTipo, setEditandoTipo] = useState(false);
+
+  // Estados para paginação do histórico
+  const [historicoLimitado, setHistoricoLimitado] = useState([]);
+  const [historicoVisivel, setHistoricoVisivel] = useState(3);
+  const [podeCarregarMais, setPodeCarregarMais] = useState(false);
 
   const isAdmin = userProfile?.tipoUsuario === 'admin';
   const m2Coins = userProfile?.m2Coins || 0;
@@ -61,7 +71,18 @@ export default function Perfil() {
             });
           }
         });
+        
         setHistoricoAulas(aulasData);
+        
+        // Processar histórico limitado
+        const aulasRealizadas = aulasData
+          .filter(aula => aula.status === 'realizada')
+          .sort((a, b) => b.data - a.data);
+        
+        const limitado = aulasRealizadas.slice(0, historicoVisivel);
+        setHistoricoLimitado(limitado);
+        setPodeCarregarMais(aulasRealizadas.length > historicoVisivel);
+        
         setLoading(false);
       },
       (error) => {
@@ -72,7 +93,27 @@ export default function Perfil() {
 
     return () => unsubscribe();
   }, [user, isAdmin]);
-  
+
+  // Função para carregar mais registros
+  const carregarMaisHistorico = () => {
+    const novoLimite = historicoVisivel + 3;
+    const aulasRealizadas = historicoAulas.filter(aula => aula.status === 'realizada');
+    const limitado = aulasRealizadas.slice(0, novoLimite);
+    
+    setHistoricoLimitado(limitado);
+    setHistoricoVisivel(novoLimite);
+    setPodeCarregarMais(aulasRealizadas.length > novoLimite);
+  };
+
+  // Função para resetar paginação
+  const resetarPaginação = () => {
+    setHistoricoVisivel(3);
+    const aulasRealizadas = historicoAulas.filter(aula => aula.status === 'realizada');
+    const limitado = aulasRealizadas.slice(0, 3);
+    setHistoricoLimitado(limitado);
+    setPodeCarregarMais(aulasRealizadas.length > 3);
+  };
+
   // Carregar usuários para administradores
   useEffect(() => {
     if (!isAdmin) return;
@@ -96,6 +137,14 @@ export default function Perfil() {
   useEffect(() => {
     setTimeout(() => setLoading(false), 500);
   }, []);
+
+
+
+
+
+
+
+
 
   // Formatar data
   const formatarData = (data) => {
@@ -192,6 +241,11 @@ export default function Perfil() {
     setUsuarioEditandoPlano({ id: userId });
     setShowPlanoModal(true);
   };
+  
+  const handleEditTipoUsuario = async (userId) => {
+    setUsuarioEditandoTipo({ id: userId });
+    setShowTipoUsuarioModal(true);
+  };
 
   const aplicarPlano = async (plano) => {
     if (!usuarioEditandoPlano) return;
@@ -219,6 +273,55 @@ export default function Perfil() {
       Alert.alert('Erro', 'Não foi possível aplicar o plano');
     } finally {
       setEditandoPlano(false);
+    }
+  };
+  
+  const aplicarTipoUsuario = async (novoTipo) => {
+    if (!usuarioEditandoTipo) return;
+    
+    setEditandoTipo(true);
+    try {
+      const userRef = doc(db, 'usuarios', usuarioEditandoTipo.id);
+      
+      // Configurações baseadas no novo tipo
+      let configuracao = {
+        tipoUsuario: novoTipo,
+        ultimaAtualizacao: new Date()
+      };
+      
+      if (novoTipo === 'admin') {
+        configuracao = {
+          ...configuracao,
+          m2Coins: 999,
+          plano: 'Admin Ilimitado',
+          aprovado: true
+        };
+      } else if (novoTipo === 'personal') {
+        configuracao = {
+          ...configuracao,
+          m2Coins: 8, // 8 aulas por mês
+          plano: 'Personal Training',
+          aprovado: true
+        };
+      } else if (novoTipo === 'aluno') {
+        configuracao = {
+          ...configuracao,
+          m2Coins: 4, // 4 aulas por mês (plano básico)
+          plano: 'Plano Básico',
+          aprovado: false // Precisa de aprovação
+        };
+      }
+      
+      await updateDoc(userRef, configuracao);
+      
+      setShowTipoUsuarioModal(false);
+      setUsuarioEditandoTipo(null);
+      Alert.alert('Sucesso', `Usuário alterado para ${novoTipo === 'admin' ? 'ADMINISTRADOR' : novoTipo === 'personal' ? 'PERSONAL TRAINING' : 'ALUNO'}!`);
+    } catch (error) {
+      console.error('Erro ao alterar tipo de usuário:', error);
+      Alert.alert('Erro', 'Não foi possível alterar o tipo de usuário');
+    } finally {
+      setEditandoTipo(false);
     }
   };
 
@@ -276,6 +379,7 @@ export default function Perfil() {
 
       {/* Conteúdo principal */}
       <View style={styles.contentContainer}>
+
         <ScrollView style={styles.scrollView}>
           {/* Header com título */}
           <View style={styles.header}>
@@ -334,14 +438,21 @@ export default function Perfil() {
           {/* Histórico de Aulas (apenas para alunos) */}
           {!isAdmin && (
             <View className="px-6 py-6 bg-white">
-              <View className="flex-row items-center mb-6">
-                <Ionicons name="time" size={24} color="#1E40AF" />
-                <Text className="text-gray-800 font-pextrabold text-2xl ml-2">
-                  Histórico de Aulas
-                </Text>
+              <View className="flex-row items-center justify-between mb-6">
+                <View className="flex-row items-center">
+                  <Ionicons name="time" size={24} color="#1E40AF" />
+                  <Text className="text-gray-800 font-pextrabold text-2xl ml-2">
+                    Histórico de Aulas
+                  </Text>
+                </View>
+                <View className="bg-blue-100 rounded-full px-3 py-1">
+                  <Text className="text-blue-800 font-pbold text-sm">
+                    {historicoLimitado.length} de {historicoAulas.filter(aula => aula.status === 'realizada').length}
+                  </Text>
+                </View>
               </View>
 
-              {historicoAulas.length === 0 ? (
+              {historicoLimitado.length === 0 ? (
                 <View className="bg-gray-50 rounded-xl p-8 items-center">
                   <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
                   <Text className="text-gray-500 font-pregular text-lg text-center mt-4">
@@ -353,7 +464,7 @@ export default function Perfil() {
                 </View>
               ) : (
                 <View className="space-y-3">
-                  {historicoAulas.map((aula) => (
+                  {historicoLimitado.map((aula) => (
                     <View key={aula.id} className="bg-white rounded-xl p-4 shadow-lg border-2 border-blue-600">
                       <View className="flex-row items-center justify-between mb-3">
                         <View className="flex-row items-center">
@@ -383,6 +494,74 @@ export default function Perfil() {
                       </View>
                     </View>
                   ))}
+
+                  
+                  {/* Botão Carregar Mais - sempre mostrar se podeCarregarMais for true */}
+                  {podeCarregarMais && (
+                    <TouchableOpacity
+                      onPress={carregarMaisHistorico}
+                      style={{
+                        backgroundColor: '#3B82F6',
+                        borderRadius: 12,
+                        padding: 16,
+                        borderWidth: 2,
+                        borderColor: '#60A5FA',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 8,
+                        elevation: 8,
+                        alignItems: 'center'
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="chevron-down" size={20} color="white" />
+                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16, marginLeft: 8 }}>
+                          Carregar mais 3 aulas
+                        </Text>
+                      </View>
+                      <Text style={{ color: '#DBEAFE', fontWeight: '400', fontSize: 14, marginTop: 4 }}>
+                        Mostrando {historicoLimitado.length} de {historicoAulas.filter(aula => aula.status === 'realizada').length} aulas
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Mensagem de conclusão - mostrar se não pode carregar mais */}
+                  {!podeCarregarMais && historicoAulas.filter(aula => aula.status === 'realizada').length > 3 && (
+                    <View style={{
+                      backgroundColor: '#F0FDF4',
+                      borderRadius: 12,
+                      padding: 16,
+                      borderWidth: 2,
+                      borderColor: '#BBF7D0',
+                      alignItems: 'center'
+                    }}>
+                      <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                      <Text style={{ color: '#166534', fontWeight: '700', fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+                        Todas as {historicoAulas.filter(aula => aula.status === 'realizada').length} aulas foram carregadas
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Botão "Ver Menos" - sempre mostrar quando há mais de 3 aulas visíveis */}
+                  {historicoVisivel > 3 && (
+                    <TouchableOpacity
+                      onPress={resetarPaginação}
+                      style={{
+                        backgroundColor: 'transparent',
+                        borderRadius: 8,
+                        padding: 8,
+                        borderWidth: 1,
+                        borderColor: '#9CA3AF',
+                        alignItems: 'center',
+                        marginTop: 8
+                      }}
+                    >
+                      <Text style={{ color: '#6B7280', fontWeight: '500', fontSize: 12 }}>
+                        Ver menos aulas
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
@@ -479,6 +658,15 @@ export default function Perfil() {
                               </TouchableOpacity>
                             </>
                           )}
+                          
+                          <TouchableOpacity
+                            onPress={() => handleEditTipoUsuario(usuario.id)}
+                            className="bg-orange-500 rounded-lg p-3 border border-orange-400 shadow-sm"
+                          >
+                            <Text className="text-white font-pextrabold text-sm text-center">
+                              🔄 Alterar Tipo
+                            </Text>
+                          </TouchableOpacity>
                           
                           <TouchableOpacity
                             onPress={() => handleUpdateUserCoins(usuario.id, usuario.m2Coins || 0)}
@@ -919,6 +1107,108 @@ export default function Perfil() {
                       setUsuarioEditandoPlano(null);
                     }}
                     className="bg-gray-500 rounded-lg p-3 mt-4 items-center"
+                  >
+                    <Text className="text-white font-pbold text-base">
+                      Cancelar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          {/* Modal para edição de tipo de usuário */}
+          {showTipoUsuarioModal && (
+            <Modal
+              visible={showTipoUsuarioModal}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setShowTipoUsuarioModal(false)}
+            >
+              <View className="flex-1 bg-black/50 justify-center items-center px-6">
+                <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+                  <Text className="text-gray-800 font-pextrabold text-2xl text-center mb-4">
+                    Alterar Tipo de Usuário
+                  </Text>
+                  
+                  <Text className="text-gray-600 font-pregular text-base text-center mb-6">
+                    Selecione o novo tipo de usuário. As configurações serão ajustadas automaticamente.
+                  </Text>
+                  
+                  <View className="space-y-3">
+                    {/* Tipo Admin */}
+                    <TouchableOpacity
+                      onPress={() => aplicarTipoUsuario('admin')}
+                      disabled={editandoTipo}
+                      className="bg-red-50 rounded-xl p-4 border-2 border-red-200"
+                    >
+                      <View className="flex-row items-center justify-between mb-2">
+                        <Text className="text-red-800 font-pbold text-lg">
+                          👑 ADMINISTRADOR
+                        </Text>
+                        <View className="bg-red-100 rounded-full px-3 py-1">
+                          <Text className="text-red-700 font-pbold text-sm">
+                            Acesso Total
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <Text className="text-red-700 font-pregular text-sm mb-2">
+                        Controle completo do sistema, 999 M2 Coins, aprovado automaticamente
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    {/* Tipo Personal Training */}
+                    <TouchableOpacity
+                      onPress={() => aplicarTipoUsuario('personal')}
+                      disabled={editandoTipo}
+                      className="bg-purple-50 rounded-xl p-4 border-2 border-purple-200"
+                    >
+                      <View className="flex-row items-center justify-between mb-2">
+                        <Text className="text-purple-800 font-pbold text-lg">
+                          🏃‍♂️ PERSONAL TRAINING
+                        </Text>
+                        <View className="bg-purple-100 rounded-full px-3 py-1">
+                          <Text className="text-purple-700 font-pbold text-sm">
+                            8 M2 Coins
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <Text className="text-purple-700 font-pregular text-sm mb-2">
+                        Horários flexíveis, 8 aulas por mês, aprovado automaticamente
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    {/* Tipo Aluno */}
+                    <TouchableOpacity
+                      onPress={() => aplicarTipoUsuario('aluno')}
+                      disabled={editandoTipo}
+                      className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200"
+                    >
+                      <View className="flex-row items-center justify-between mb-2">
+                        <Text className="text-blue-800 font-pbold text-lg">
+                          👥 ALUNO
+                        </Text>
+                        <View className="bg-blue-100 rounded-full px-3 py-1">
+                          <Text className="text-blue-700 font-pbold text-sm">
+                            4 M2 Coins
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <Text className="text-blue-700 font-pregular text-sm mb-2">
+                        Horários fixos, 4 aulas por mês, precisa de aprovação
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    onPress={() => {
+                      setShowTipoUsuarioModal(false);
+                      setUsuarioEditandoTipo(null);
+                    }}
+                    className="bg-gray-500 rounded-lg p-3 mt-6 items-center"
                   >
                     <Text className="text-white font-pbold text-base">
                       Cancelar

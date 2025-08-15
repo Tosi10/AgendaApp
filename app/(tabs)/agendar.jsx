@@ -15,11 +15,17 @@ export default function Agendar() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [agendamentos, setAgendamentos] = useState({});
   const [loading, setLoading] = useState(true);
+  
+  // Estado para seleção de calendário (apenas para admins)
+  const [calendarioSelecionado, setCalendarioSelecionado] = useState('alunos');
 
   // Verificar se o usuário pode agendar
   const canSchedule = userProfile && userProfile.aprovado;
   const isPersonalTraining = userProfile?.tipoUsuario === 'personal';
   const isAdmin = userProfile?.tipoUsuario === 'admin';
+  
+  // Determinar qual calendário mostrar
+  const mostrarCalendarioPersonal = isPersonalTraining || (isAdmin && calendarioSelecionado === 'personal');
 
   // Carregar agendamentos do Firestore
   useEffect(() => {
@@ -132,8 +138,43 @@ export default function Agendar() {
 
   // Obter horários baseado no tipo de usuário e dia selecionado
   const getHorariosDisponiveis = () => {
-    if (isPersonalTraining) {
-      return HORARIOS_PERSONAL_TRAINING.map(h => h.hora);
+    if (mostrarCalendarioPersonal) {
+      // Para Personal Training, usar horários baseados no dia da semana
+      if (!selectedDay) return [];
+      
+      // Mapear o dia da semana para a chave correta
+      const dayOfWeek = selectedDay.getDay(); // 0 = domingo, 1 = segunda, etc.
+      
+      let dayKey;
+      switch (dayOfWeek) {
+        case 1: // Segunda-feira
+          dayKey = 'segunda';
+          break;
+        case 2: // Terça-feira
+          dayKey = 'terca';
+          break;
+        case 3: // Quarta-feira
+          dayKey = 'quarta';
+          break;
+        case 4: // Quinta-feira
+          dayKey = 'quinta';
+          break;
+        case 5: // Sexta-feira
+          dayKey = 'sexta';
+          break;
+        default:
+          return []; // Fim de semana não tem aulas
+      }
+      
+      console.log('Dia selecionado (Personal):', selectedDay.toDateString());
+      console.log('Dia da semana (Personal):', dayOfWeek, 'Chave:', dayKey);
+      console.log('Horários disponíveis (Personal):', HORARIOS_PERSONAL_TRAINING[dayKey]);
+      
+      if (HORARIOS_PERSONAL_TRAINING[dayKey]) {
+        return HORARIOS_PERSONAL_TRAINING[dayKey].map(h => h.hora);
+      }
+      
+      return [];
     }
     
     // Para alunos normais, usar horários baseados no dia da semana
@@ -163,9 +204,9 @@ export default function Agendar() {
         return []; // Fim de semana não tem aulas
     }
     
-    console.log('Dia selecionado:', selectedDay.toDateString());
-    console.log('Dia da semana:', dayOfWeek, 'Chave:', dayKey);
-    console.log('Horários disponíveis:', HORARIOS_DISPONIVEIS[dayKey]);
+    console.log('Dia selecionado (Alunos):', selectedDay.toDateString());
+    console.log('Dia da semana (Alunos):', dayOfWeek, 'Chave:', dayKey);
+    console.log('Horários disponíveis (Alunos):', HORARIOS_DISPONIVEIS[dayKey]);
     
     if (HORARIOS_DISPONIVEIS[dayKey]) {
       return HORARIOS_DISPONIVEIS[dayKey].map(h => h.hora);
@@ -238,15 +279,23 @@ export default function Agendar() {
         return;
       }
       
-      if (novosAgendamentos[key].length >= 8) {
-        Alert.alert('Limite Atingido', 'Este horário já está com 8 alunos.');
+      // Verificar limite baseado no tipo de calendário
+      const limiteAlunos = mostrarCalendarioPersonal ? 1 : 8; // Personal: 1 aluno, Alunos: 8 alunos
+      if (novosAgendamentos[key].length >= limiteAlunos) {
+        const mensagem = mostrarCalendarioPersonal 
+          ? 'Este horário já está ocupado por outro aluno.' 
+          : 'Este horário já está com 8 alunos.';
+        Alert.alert('Limite Atingido', mensagem);
         return;
       }
       
       // DEDUZIR 1 M2 COIN
       try {
         await updateCurrentUserM2Coins(userProfile.m2Coins - 1);
-        Alert.alert('Sucesso', 'Você foi agendado para esta aula! 1 M2 Coin foi deduzido.');
+        const mensagem = mostrarCalendarioPersonal 
+          ? 'Você foi agendado para Personal Training! 1 M2 Coin foi deduzido.'
+          : 'Você foi agendado para esta aula! 1 M2 Coin foi deduzido.';
+        Alert.alert('Sucesso', mensagem);
       } catch (error) {
         Alert.alert('Erro', 'Não foi possível deduzir os M2 Coins. Tente novamente.');
         return;
@@ -341,6 +390,46 @@ export default function Agendar() {
                 <Ionicons name="chevron-forward" size={24} color="white" />
               </TouchableOpacity>
             </View>
+            
+            {/* Seletor de Calendário para Admins */}
+            {isAdmin && (
+              <View className="bg-blue-500 rounded-lg p-3 mb-4">
+                <Text className="text-white font-pbold text-sm text-center mb-2">
+                  Visualizar Calendário:
+                </Text>
+                <View className="flex-row space-x-2">
+                  <TouchableOpacity
+                    onPress={() => setCalendarioSelecionado('alunos')}
+                    className={`flex-1 py-2 px-3 rounded-lg border-2 ${
+                      calendarioSelecionado === 'alunos'
+                        ? 'bg-yellow-400 border-yellow-500'
+                        : 'bg-blue-600 border-blue-400'
+                    }`}
+                  >
+                    <Text className={`font-pbold text-sm text-center ${
+                      calendarioSelecionado === 'alunos' ? 'text-gray-800' : 'text-white'
+                    }`}>
+                      👥 Alunos
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    onPress={() => setCalendarioSelecionado('personal')}
+                    className={`flex-1 py-2 px-3 rounded-lg border-2 ${
+                      calendarioSelecionado === 'personal'
+                        ? 'bg-yellow-400 border-yellow-500'
+                        : 'bg-blue-600 border-blue-400'
+                    }`}
+                  >
+                    <Text className={`font-pbold text-sm text-center ${
+                      calendarioSelecionado === 'personal' ? 'text-gray-800' : 'text-white'
+                    }`}>
+                      🏃‍♂️ Personal
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
             {/* M2 Coins */}
             <View className="bg-blue-500 rounded-lg p-3 mb-4">
@@ -387,9 +476,22 @@ export default function Agendar() {
           {/* Lista de horários do dia selecionado */}
           {selectedDay && (
             <View className="px-6 py-4">
-              <Text className="text-gray-800 font-pbold text-xl mb-4">
-                Horários - {formatDate(selectedDay)}
-              </Text>
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-gray-800 font-pbold text-xl">
+                  Horários - {formatDate(selectedDay)}
+                </Text>
+                <View className={`px-3 py-1 rounded-full ${
+                  mostrarCalendarioPersonal 
+                    ? 'bg-purple-100 border-2 border-purple-300' 
+                    : 'bg-blue-100 border-2 border-blue-300'
+                }`}>
+                  <Text className={`font-pbold text-sm ${
+                    mostrarCalendarioPersonal ? 'text-purple-700' : 'text-blue-700'
+                  }`}>
+                    {mostrarCalendarioPersonal ? '🏃‍♂️ Personal' : '👥 Alunos'}
+                  </Text>
+                </View>
+              </View>
 
               {/* Lista de horários */}
               {getHorariosDisponiveis().length === 0 ? (
@@ -415,7 +517,7 @@ export default function Agendar() {
                           {horario}
                         </Text>
                         <Text className="text-gray-500 font-pregular text-sm">
-                          {alunos.length}/8 alunos
+                          {alunos.length}/{mostrarCalendarioPersonal ? '1' : '8'} {mostrarCalendarioPersonal ? 'aluno' : 'alunos'}
                         </Text>
                       </View>
 
@@ -435,7 +537,7 @@ export default function Agendar() {
                                 ? 'bg-gray-300' 
                                 : 'bg-blue-600'
                         }`}
-                        disabled={!userAgendado && (alunos.length >= 8 || isClassPassed(selectedDay, horario)) || (userAgendado && !canCancelClass(selectedDay, horario))}
+                        disabled={!userAgendado && (alunos.length >= (mostrarCalendarioPersonal ? 1 : 8) || isClassPassed(selectedDay, horario)) || (userAgendado && !canCancelClass(selectedDay, horario))}
                       >
                         <Text className="text-white font-pbold text-center">
                           {userAgendado 
@@ -446,8 +548,8 @@ export default function Agendar() {
                                   : 'Cancelamento Bloqueado')
                             : isClassPassed(selectedDay, horario)
                               ? 'Horário Passado'
-                              : alunos.length >= 8 
-                                ? 'Horário Lotado' 
+                              : alunos.length >= (mostrarCalendarioPersonal ? 1 : 8)
+                                ? (mostrarCalendarioPersonal ? 'Horário Ocupado' : 'Horário Lotado')
                                 : 'Agendar Aula'
                           }
                         </Text>

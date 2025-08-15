@@ -13,16 +13,16 @@ export default function FormField({
   return (
     <View className="mb-4">
       {label && (
-        <Text className="text-gray-100 font-pmedium text-sm mb-2">
+        <Text className="text-black font-pbold text-lg mb-2">
           {label}
         </Text>
       )}
       <TextInput
-        className={`bg-black-100 border rounded-lg px-4 py-3 text-white font-pregular text-base ${
+        className={`bg-white/90 border rounded-lg px-4 py-3 text-black font-pbold text-lg ${
           error ? 'border-red-500' : 'border-gray-600'
         }`}
         placeholder={placeholder}
-        placeholderTextColor="#CDCDE0"
+        placeholderTextColor="#666666"
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}

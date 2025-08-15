@@ -32,10 +32,55 @@ export const DIAS_SEMANA = {
   sexta: 'Sexta-feira'
 };
 
-export const HORARIOS_PERSONAL_TRAINING = [
-  { hora: '07:00', disponivel: true },
-  { hora: '08:00', disponivel: true },
-  { hora: '09:00', disponivel: true },
-  { hora: '16:00', disponivel: true },
-  { hora: '19:00', disponivel: true }
-];
+export const HORARIOS_PERSONAL_TRAINING = {
+  segunda: [
+    { hora: '08:00', disponivel: true },
+    { hora: '10:00', disponivel: true },
+    { hora: '11:00', disponivel: true },
+    { hora: '14:00', disponivel: true },
+    { hora: '15:00', disponivel: true },
+    { hora: '16:00', disponivel: true },
+    { hora: '20:00', disponivel: true }
+  ],
+  terca: [
+    { hora: '06:30', disponivel: true },
+    { hora: '07:30', disponivel: true },
+    { hora: '08:30', disponivel: true },
+    { hora: '10:00', disponivel: true },
+    { hora: '14:00', disponivel: true },
+    { hora: '15:00', disponivel: true },
+    { hora: '16:00', disponivel: true },
+    { hora: '19:00', disponivel: true },
+    { hora: '20:00', disponivel: true }
+  ],
+  quarta: [
+    { hora: '08:00', disponivel: true },
+    { hora: '10:00', disponivel: true },
+    { hora: '11:00', disponivel: true },
+    { hora: '14:00', disponivel: true },
+    { hora: '15:00', disponivel: true },
+    { hora: '16:00', disponivel: true },
+    { hora: '17:00', disponivel: true },
+    { hora: '20:00', disponivel: true }
+  ],
+  quinta: [
+    { hora: '06:30', disponivel: true },
+    { hora: '07:30', disponivel: true },
+    { hora: '08:30', disponivel: true },
+    { hora: '10:00', disponivel: true },
+    { hora: '14:00', disponivel: true },
+    { hora: '15:00', disponivel: true },
+    { hora: '16:00', disponivel: true },
+    { hora: '19:00', disponivel: true },
+    { hora: '20:00', disponivel: true }
+  ],
+  sexta: [
+    { hora: '08:00', disponivel: true },
+    { hora: '10:00', disponivel: true },
+    { hora: '11:00', disponivel: true },
+    { hora: '14:00', disponivel: true },
+    { hora: '15:00', disponivel: true },
+    { hora: '16:00', disponivel: true },
+    { hora: '20:00', disponivel: true }
+  ]
+};

@@ -10,6 +10,8 @@ export function GlobalProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentTab, setCurrentTab] = useState('home');
+  const [resetHistorico, setResetHistorico] = useState(0);
 
   // Função para criar perfil de usuário
   const createUserProfile = async (userData) => {
@@ -198,11 +200,11 @@ export function GlobalProvider({ children }) {
           
           if (profile) {
             // Verificar se o usuário está aprovado (exceto admins)
-            if (profile.tipoUsuario !== 'admin' && !profile.aprovado) {
+            if (profile.tipoUsuario !== 'admin' && profile.tipoUsuario !== 'personal' && !profile.aprovado) {
               // Usuário não aprovado - redirecionar para tela de aguardo
               router.replace('/(auth)/waiting-approval');
             } else {
-              // Usuário aprovado ou admin - redirecionar para tela principal
+              // Usuário aprovado, admin ou personal - redirecionar para tela principal
               router.replace('/(tabs)');
             }
           } else {
@@ -245,6 +247,10 @@ export function GlobalProvider({ children }) {
     signOut,
     isAuthenticated: !!user,
     isAdmin: userProfile?.tipoUsuario === 'admin',
+    currentTab,
+    setCurrentTab,
+    resetHistorico,
+    triggerResetHistorico: () => setResetHistorico(prev => prev + 1),
     createUserProfile,
     updateApelido,
     updateUserM2Coins,

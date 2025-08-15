@@ -59,7 +59,7 @@ export default function SignIn() {
 
   return (
     <ImageBackground 
-      source={require('../../assets/images/murilo.png')} 
+      source={require('../../assets/images/M2_9.png')} 
       className="flex-1"
       resizeMode="cover"
     >
@@ -73,10 +73,10 @@ export default function SignIn() {
           showsVerticalScrollIndicator={false}
         >
           <View className="mb-8">
-            <Text className="text-white font-pbold text-3xl mb-2">
-              Bem-vindo de volta!
+            <Text className="text-black font-pextrabold text-4xl mb-2">
+              Bem-vindo!
             </Text>
-            <Text className="text-blue-50 font-pregular text-base">
+            <Text className="text-black font-pbold text-lg">
               Faça login para continuar
             </Text>
           </View>
@@ -109,11 +109,11 @@ export default function SignIn() {
             />
 
             <View className="mt-6 flex-row justify-center items-center">
-              <Text className="text-blue-50 font-pregular text-base">
+              <Text className="text-black font-pregular text-base">
                 Não tem uma conta?{' '}
               </Text>
               <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
-                <Text className="text-secondary font-pbold text-base">
+                <Text className="text-yellow-500 font-pextrabold text-xl" style={{ fontWeight: '900' }}>
                   Criar conta
                 </Text>
               </TouchableOpacity>
