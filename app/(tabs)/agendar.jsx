@@ -272,9 +272,18 @@ export default function Agendar() {
     const userEmail = user?.email;
     const userIndex = novosAgendamentos[key].indexOf(userEmail);
     
+    // DEBUG: Verificar valores
+    console.log('🔍 DEBUG toggleAgendamento:', {
+      userEmail,
+      userIndex,
+      tipoUsuario: userProfile?.tipoUsuario,
+      m2Coins: userProfile?.m2Coins,
+      userProfile: userProfile
+    });
+    
     if (userIndex === -1) {
-      // Adicionar usuário - VERIFICAR SE TEM COINS SUFICIENTES
-      if (userProfile.m2Coins < 1) {
+      // Adicionar usuário - VERIFICAR SE TEM COINS SUFICIENTES (para alunos e personal)
+      if ((userProfile?.tipoUsuario === 'aluno' || userProfile?.tipoUsuario === 'personal') && userProfile.m2Coins < 1) {
         Alert.alert('Coins Insuficientes', 'Você precisa de pelo menos 1 M2 Coin para agendar uma aula.');
         return;
       }
@@ -289,16 +298,35 @@ export default function Agendar() {
         return;
       }
       
-      // DEDUZIR 1 M2 COIN
-      try {
-        await updateCurrentUserM2Coins(userProfile.m2Coins - 1);
+      // DEDUZIR 1 M2 COIN (para alunos e personal)
+      console.log('🔍 DEBUG: Verificando tipo de usuário para dedução:', userProfile?.tipoUsuario);
+      
+      if (userProfile?.tipoUsuario === 'aluno' || userProfile?.tipoUsuario === 'personal') {
+        const tipoUsuario = userProfile?.tipoUsuario === 'aluno' ? 'ALUNO' : 'PERSONAL';
+        console.log(`🔍 DEBUG: Usuário é ${tipoUsuario}, deduzindo coins...`);
+        console.log('🔍 DEBUG: Coins antes:', userProfile.m2Coins);
+        console.log('🔍 DEBUG: Coins após dedução:', userProfile.m2Coins - 1);
+        
+        try {
+          await updateCurrentUserM2Coins(userProfile.m2Coins - 1);
+          console.log('🔍 DEBUG: Coins deduzidos com sucesso!');
+          
+          const mensagem = mostrarCalendarioPersonal 
+            ? 'Você foi agendado para Personal Training! 1 M2 Coin foi deduzido.'
+            : 'Você foi agendado para esta aula! 1 M2 Coin foi deduzido.';
+          Alert.alert('Sucesso', mensagem);
+        } catch (error) {
+          console.error('🔍 DEBUG: Erro ao deduzir coins:', error);
+          Alert.alert('Erro', 'Não foi possível deduzir os M2 Coins. Tente novamente.');
+          return;
+        }
+      } else {
+        console.log('🔍 DEBUG: Usuário NÃO é aluno nem personal, tipo:', userProfile?.tipoUsuario);
+        // Para admins - mensagem sem moedas
         const mensagem = mostrarCalendarioPersonal 
-          ? 'Você foi agendado para Personal Training! 1 M2 Coin foi deduzido.'
-          : 'Você foi agendado para esta aula! 1 M2 Coin foi deduzido.';
+          ? 'Você foi agendado para Personal Training!'
+          : 'Você foi agendado para esta aula!';
         Alert.alert('Sucesso', mensagem);
-      } catch (error) {
-        Alert.alert('Erro', 'Não foi possível deduzir os M2 Coins. Tente novamente.');
-        return;
       }
       
       novosAgendamentos[key] = [...novosAgendamentos[key], userEmail];
@@ -307,13 +335,28 @@ export default function Agendar() {
       await salvarAgendamento(key, novosAgendamentos[key]);
       
     } else {
-      // Remover usuário - DEVOLVER 1 M2 COIN
-      try {
-        await updateCurrentUserM2Coins(userProfile.m2Coins + 1);
-        Alert.alert('Cancelado', 'Seu agendamento foi cancelado. 1 M2 Coin foi devolvido.');
-      } catch (error) {
-        Alert.alert('Erro', 'Não foi possível devolver os M2 Coins. Tente novamente.');
-        return;
+      // Remover usuário - DEVOLVER 1 M2 COIN (para alunos e personal)
+      console.log('🔍 DEBUG: Cancelando agendamento, verificando tipo de usuário:', userProfile?.tipoUsuario);
+      
+      if (userProfile?.tipoUsuario === 'aluno' || userProfile?.tipoUsuario === 'personal') {
+        const tipoUsuario = userProfile?.tipoUsuario === 'aluno' ? 'ALUNO' : 'PERSONAL';
+        console.log(`🔍 DEBUG: Usuário é ${tipoUsuario}, devolvendo coins...`);
+        console.log('🔍 DEBUG: Coins antes:', userProfile.m2Coins);
+        console.log('🔍 DEBUG: Coins após devolução:', userProfile.m2Coins + 1);
+        
+        try {
+          await updateCurrentUserM2Coins(userProfile.m2Coins + 1);
+          console.log('🔍 DEBUG: Coins devolvidos com sucesso!');
+          Alert.alert('Cancelado', 'Seu agendamento foi cancelado. 1 M2 Coin foi devolvido.');
+        } catch (error) {
+          console.error('🔍 DEBUG: Erro ao devolver coins:', error);
+          Alert.alert('Erro', 'Não foi possível devolver os M2 Coins. Tente novamente.');
+          return;
+        }
+      } else {
+        console.log('🔍 DEBUG: Usuário NÃO é aluno nem personal, tipo:', userProfile?.tipoUsuario);
+        // Para admins - mensagem sem moedas
+        Alert.alert('Cancelado', 'Seu agendamento foi cancelado.');
       }
       
       novosAgendamentos[key] = novosAgendamentos[key].filter((_, i) => i !== userIndex);
@@ -510,8 +553,8 @@ export default function Agendar() {
                   const alunos = agendamentos[key] || [];
                   const userAgendado = isUserAgendado(selectedDay, horario);
                   
-                  return (
-                    <View key={horario} className="bg-white rounded-lg p-4 mb-3 shadow-sm">
+                                     return (
+                     <View key={horario} className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-blue-500">
                       <View className="flex-row items-center justify-between mb-3">
                         <Text className="text-gray-800 font-pbold text-lg">
                           {horario}

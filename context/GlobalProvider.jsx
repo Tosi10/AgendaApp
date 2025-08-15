@@ -48,8 +48,28 @@ export function GlobalProvider({ children }) {
       const userDoc = await getDoc(userRef);
       
       if (userDoc.exists()) {
-        setUserProfile(userDoc.data());
-        return userDoc.data();
+        const profileData = userDoc.data();
+        
+        // CORREÇÃO: Se o perfil não tiver tipoUsuario, adicionar como 'aluno'
+        if (!profileData.tipoUsuario) {
+          console.log('🔧 CORREÇÃO: Perfil sem tipoUsuario, adicionando como aluno');
+          const updatedProfile = {
+            ...profileData,
+            tipoUsuario: 'aluno',
+            ultimaAtualizacao: new Date().toISOString()
+          };
+          
+          await updateDoc(userRef, {
+            tipoUsuario: 'aluno',
+            ultimaAtualizacao: new Date().toISOString()
+          });
+          
+          setUserProfile(updatedProfile);
+          return updatedProfile;
+        }
+        
+        setUserProfile(profileData);
+        return profileData;
       } else {
         // Se não existir perfil, criar um padrão
         // Precisamos buscar o email do usuário autenticado

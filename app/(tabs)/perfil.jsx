@@ -36,6 +36,9 @@ export default function Perfil() {
   const [showTipoUsuarioModal, setShowTipoUsuarioModal] = useState(false);
   const [usuarioEditandoTipo, setUsuarioEditandoTipo] = useState(null);
   const [editandoTipo, setEditandoTipo] = useState(false);
+  
+  // Estado para busca de usuários
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Estados para paginação do histórico
   const [historicoLimitado, setHistoricoLimitado] = useState([]);
@@ -391,20 +394,18 @@ export default function Perfil() {
             </Text>
           </View>
 
-          {/* Header com M2 Coins (apenas para alunos) */}
-          {!isAdmin && (
-            <View style={styles.coinHeader}>
-              <Image
-                source={require('../../assets/images/m2coin.png')}
-                style={styles.coinImage}
-              />
-              <Text style={styles.coinText}>
-                {m2Coins}
-              </Text>
-            </View>
-          )}
+          {/* Header com M2 Coins */}
+          <View style={styles.coinHeader}>
+            <Image
+              source={require('../../assets/images/m2coin.png')}
+              style={styles.coinImage}
+            />
+            <Text style={styles.coinText}>
+              {m2Coins}
+            </Text>
+          </View>
 
-          {/* Estatísticas Rápidas (apenas para alunos) */}
+          {/* Estatísticas Rápidas */}
           {!isAdmin && (
             <View className="px-6 py-0 -mt-4 mb-4">
               <View className="flex-row space-x-3">
@@ -435,7 +436,7 @@ export default function Perfil() {
             </View>
           )}
 
-          {/* Histórico de Aulas (apenas para alunos) */}
+          {/* Histórico de Aulas */}
           {!isAdmin && (
             <View className="px-6 py-6 bg-white">
               <View className="flex-row items-center justify-between mb-6">
@@ -575,13 +576,77 @@ export default function Perfil() {
                   Painel Administrativo
                 </Text>
                 
+                {/* Campo de Busca */}
+                <View className="mb-4">
+                  <View className="flex-row items-center bg-white border-2 border-blue-300 rounded-xl px-4 py-3 shadow-sm">
+                    <Ionicons name="search" size={20} color="#2563eb" />
+                    <TextInput
+                      className="flex-1 ml-3 text-gray-800 font-pregular text-base"
+                      placeholder="Buscar usuários por nome ou email..."
+                      placeholderTextColor="#9CA3AF"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                      <TouchableOpacity
+                        onPress={() => setSearchQuery('')}
+                        className="ml-2"
+                      >
+                        <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  
+                  {/* Contador de resultados */}
+                  {searchQuery.length > 0 && (
+                    <View className="mt-2">
+                      <Text className="text-gray-600 font-pregular text-sm">
+                        {todosUsuarios.filter(usuario => {
+                          const query = searchQuery.toLowerCase();
+                          return (
+                            (usuario.apelido && usuario.apelido.toLowerCase().includes(query)) ||
+                            (usuario.email && usuario.email.toLowerCase().includes(query)) ||
+                            (usuario.tipoUsuario && usuario.tipoUsuario.toLowerCase().includes(query))
+                          );
+                        }).length} usuário(s) encontrado(s)
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                
                 {loadingUsuarios ? (
                   <Text className="text-gray-600 font-pregular text-center">
                     Carregando usuários...
                   </Text>
                 ) : (
                   <View className="space-y-3">
-                    {todosUsuarios.map((usuario) => (
+                    {/* Usuários filtrados pela busca */}
+                    {(() => {
+                      const usuariosFiltrados = todosUsuarios.filter(usuario => {
+                        if (!searchQuery.trim()) return true;
+                        const query = searchQuery.toLowerCase();
+                        return (
+                          (usuario.apelido && usuario.apelido.toLowerCase().includes(query)) ||
+                          (usuario.email && usuario.email.toLowerCase().includes(query)) ||
+                          (usuario.tipoUsuario && usuario.tipoUsuario.toLowerCase().includes(query))
+                        );
+                      });
+                      
+                      if (searchQuery.trim() && usuariosFiltrados.length === 0) {
+                        return (
+                          <View className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6 text-center">
+                            <Ionicons name="search-outline" size={48} color="#D97706" />
+                            <Text className="text-yellow-800 font-pbold text-lg mt-3 mb-2">
+                              Nenhum usuário encontrado
+                            </Text>
+                            <Text className="text-yellow-700 font-pregular text-base">
+                              Tente buscar por outro termo ou verifique a ortografia.
+                            </Text>
+                          </View>
+                        );
+                      }
+                      
+                      return usuariosFiltrados.map((usuario) => (
                       <View key={usuario.id} className="bg-white rounded-xl p-4 border-2 border-blue-300 shadow-lg mb-4">
                         <View className="flex-row items-center justify-between mb-3">
                           <Text className="text-gray-800 font-pextrabold text-xl">
@@ -607,11 +672,14 @@ export default function Perfil() {
                         </View>
                         
                         <View className="flex-row items-center justify-between mb-4">
-                          <View className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
-                            <Text className="text-gray-600 text-sm font-pbold">
-                              M2 Coins: <Text className="text-blue-600 font-pextrabold">{usuario.m2Coins || 0}</Text>
-                            </Text>
-                          </View>
+                          {/* M2 Coins (apenas para alunos) */}
+                          {usuario.tipoUsuario === 'aluno' && (
+                            <View className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                              <Text className="text-gray-600 text-sm font-pbold">
+                                M2 Coins: <Text className="text-blue-600 font-pextrabold">{usuario.m2Coins || 0}</Text>
+                              </Text>
+                            </View>
+                          )}
                           <View className={`px-3 py-1 rounded-full border ${
                             usuario.aprovado ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'
                           }`}>
@@ -668,17 +736,21 @@ export default function Perfil() {
                             </Text>
                           </TouchableOpacity>
                           
-                          <TouchableOpacity
-                            onPress={() => handleUpdateUserCoins(usuario.id, usuario.m2Coins || 0)}
-                            className="bg-blue-500 rounded-lg p-3 border border-blue-400 shadow-sm"
-                          >
-                            <Text className="text-white font-pextrabold text-sm text-center">
-                              💰 Editar M2 Coins
-                            </Text>
-                          </TouchableOpacity>
+                          {/* Botão Editar M2 Coins (apenas para alunos) */}
+                          {usuario.tipoUsuario === 'aluno' && (
+                            <TouchableOpacity
+                              onPress={() => handleUpdateUserCoins(usuario.id, usuario.m2Coins || 0)}
+                              className="bg-blue-500 rounded-lg p-3 border border-blue-400 shadow-sm"
+                            >
+                              <Text className="text-white font-pextrabold text-sm text-center">
+                                💰 Editar M2 Coins
+                              </Text>
+                            </TouchableOpacity>
+                          )}
                         </View>
                       </View>
-                    ))}
+                    ));
+                  })()}
                   </View>
                 )}
               </View>
@@ -784,7 +856,7 @@ export default function Perfil() {
             </View>
           </View>
 
-          {/* Seção de Planos Disponíveis (apenas para alunos) */}
+          {/* Seção de Planos Disponíveis */}
           {!isAdmin && (
             <View className="px-6 py-6 bg-white">
               <Text className="text-gray-800 font-pextrabold text-2xl mb-4">
@@ -1148,13 +1220,13 @@ export default function Perfil() {
                         </Text>
                         <View className="bg-red-100 rounded-full px-3 py-1">
                           <Text className="text-red-700 font-pbold text-sm">
-                            Acesso Total
+                            Sistema
                           </Text>
                         </View>
                       </View>
                       
                       <Text className="text-red-700 font-pregular text-sm mb-2">
-                        Controle completo do sistema, 999 M2 Coins, aprovado automaticamente
+                        Controle completo do sistema, acesso total, aprovado automaticamente
                       </Text>
                     </TouchableOpacity>
                     
@@ -1170,13 +1242,13 @@ export default function Perfil() {
                         </Text>
                         <View className="bg-purple-100 rounded-full px-3 py-1">
                           <Text className="text-purple-700 font-pbold text-sm">
-                            8 M2 Coins
+                            8 Aulas
                           </Text>
                         </View>
                       </View>
                       
                       <Text className="text-purple-700 font-pregular text-sm mb-2">
-                        Horários flexíveis, 8 aulas por mês, aprovado automaticamente
+                        Horários flexíveis, 8 aulas por mês, ministra aulas, aprovado automaticamente
                       </Text>
                     </TouchableOpacity>
                     
@@ -1192,13 +1264,13 @@ export default function Perfil() {
                         </Text>
                         <View className="bg-blue-100 rounded-full px-3 py-1">
                           <Text className="text-blue-700 font-pbold text-sm">
-                            4 M2 Coins
+                            4 Aulas
                           </Text>
                         </View>
                       </View>
                       
                       <Text className="text-blue-700 font-pregular text-sm mb-2">
-                        Horários fixos, 4 aulas por mês, precisa de aprovação
+                        Horários fixos, 4 aulas por mês, consome M2 Coins, precisa de aprovação
                       </Text>
                     </TouchableOpacity>
                   </View>

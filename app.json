@@ -4,7 +4,7 @@
     "slug": "agendaapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/M2_9.png",
+    "icon": "./assets/images/M2_2.png",
     "userInterfaceStyle": "light",
     "scheme": "agendaapp",
     "splash": {
@@ -17,18 +17,18 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "icon": "./assets/images/M2_9.png"
+      "icon": "./assets/images/M2_2.png"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/M2_2.png",
         "backgroundColor": "#1E40AF"
       },
-      "icon": "./assets/images/M2_9.png",
+      "icon": "./assets/images/M2_2.png",
       "package": "com.m2academia.agendaapp"
     },
     "web": {
-      "favicon": "./assets/images/M2_9.png"
+      "favicon": "./assets/images/M2_2.png"
     },
     "plugins": [
       "expo-router"

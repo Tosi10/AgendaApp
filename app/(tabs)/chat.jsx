@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useGlobal } from '../../context/GlobalProvider';
 import { db } from '../../lib/firebase';
@@ -11,10 +11,26 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const scrollViewRef = useRef();
 
   // Verificar se o usuário pode usar o chat
   const canUseChat = userProfile && userProfile.aprovado;
+
+  // Monitorar teclado
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
 
   // Carregar mensagens do Firestore
   useEffect(() => {
@@ -154,15 +170,17 @@ export default function Chat() {
 
       {/* Conteúdo principal */}
       <View style={styles.contentContainer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.titleText}>
-            Chat M2
-          </Text>
-          <Text style={styles.subtitleText}>
-            Conecte-se com outros alunos e professores
-          </Text>
-        </View>
+        {/* Header - Só mostra quando teclado está fechado */}
+        {!isKeyboardVisible && (
+          <View style={styles.header}>
+            <Text style={styles.titleText}>
+              Chat M2
+            </Text>
+            <Text style={styles.subtitleText}>
+              Conecte-se com outros alunos e professores
+            </Text>
+          </View>
+        )}
 
         {/* Lista de mensagens */}
         <ScrollView 
@@ -240,7 +258,7 @@ export default function Chat() {
         {/* Input de mensagem */}
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
           enabled={true}
           style={styles.inputContainer}
         >
@@ -303,18 +321,18 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#2563eb',
     paddingHorizontal: 24,
-    paddingVertical: 64,
+    paddingVertical: 24,
   },
   titleText: {
     color: 'white',
     fontWeight: '800',
-    fontSize: 30,
-    marginBottom: 8,
+    fontSize: 26,
+    marginBottom: 6,
   },
   subtitleText: {
     color: '#dbeafe',
     fontWeight: '400',
-    fontSize: 18,
+    fontSize: 16,
   },
   messagesContainer: {
     flex: 1,
@@ -454,13 +472,22 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     // Melhor comportamento com teclado
     position: 'relative',
     zIndex: 1000,
+    // Transição suave
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   inputWrapper: {
     flexDirection: 'row',
