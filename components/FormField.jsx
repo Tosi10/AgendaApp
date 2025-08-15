@@ -18,8 +18,8 @@ export default function FormField({
         </Text>
       )}
       <TextInput
-        className={`bg-white/90 border rounded-lg px-4 py-3 text-black font-pbold text-lg ${
-          error ? 'border-red-500' : 'border-gray-600'
+        className={`bg-white/90 border-4 rounded-lg px-4 py-3 text-black font-pbold text-lg ${
+          error ? 'border-red-500' : 'border-blue-800'
         }`}
         placeholder={placeholder}
         placeholderTextColor="#666666"

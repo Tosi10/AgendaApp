@@ -17,11 +17,11 @@ export default function CustomButton({
     
     switch (variant) {
       case 'secondary':
-        return `${baseStyle} bg-secondary ${className}`;
+        return `${baseStyle} bg-secondary border-4 border-yellow-600 ${className}`;
       case 'outline':
-        return `${baseStyle} border-2 border-secondary bg-transparent ${className}`;
+        return `${baseStyle} border-4 border-yellow-600 bg-transparent ${className}`;
       default:
-        return `${baseStyle} bg-secondary ${className}`;
+        return `${baseStyle} bg-secondary border-4 border-yellow-600 ${className}`;
     }
   };
 

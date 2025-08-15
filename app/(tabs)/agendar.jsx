@@ -576,8 +576,8 @@ export default function Agendar() {
                                   : 'bg-yellow-500')
                             : isClassPassed(selectedDay, horario)
                               ? 'bg-gray-400'
-                              : alunos.length >= 8 
-                                ? 'bg-gray-300' 
+                              : alunos.length >= (mostrarCalendarioPersonal ? 1 : 8)
+                                ? (mostrarCalendarioPersonal ? 'bg-purple-500' : 'bg-gray-300')
                                 : 'bg-blue-600'
                         }`}
                         disabled={!userAgendado && (alunos.length >= (mostrarCalendarioPersonal ? 1 : 8) || isClassPassed(selectedDay, horario)) || (userAgendado && !canCancelClass(selectedDay, horario))}

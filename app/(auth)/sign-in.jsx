@@ -73,7 +73,7 @@ export default function SignIn() {
           showsVerticalScrollIndicator={false}
         >
           <View className="mb-8">
-            <Text className="text-black font-pextrabold text-4xl mb-2">
+            <Text className="text-black font-pextrabold text-5xl mb-2">
               Bem-vindo!
             </Text>
             <Text className="text-black font-pbold text-lg">
@@ -108,15 +108,26 @@ export default function SignIn() {
               className="mt-6"
             />
 
+            <View className="mt-4 flex-row justify-center">
+              <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+                <Text className="text-blue-600 font-pbold text-base underline">
+                  Esqueci minha senha
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <View className="mt-6 flex-row justify-center items-center">
               <Text className="text-black font-pregular text-base">
                 Não tem uma conta?{' '}
               </Text>
-              <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
-                <Text className="text-yellow-500 font-pextrabold text-xl" style={{ fontWeight: '900' }}>
-                  Criar conta
-                </Text>
-              </TouchableOpacity>
+                             <TouchableOpacity 
+                 onPress={() => router.push('/(auth)/sign-up')}
+                 className="bg-yellow-400 border-4 border-yellow-600 rounded-lg px-2 py-1"
+               >
+                 <Text className="text-black font-pextrabold text-lg" style={{ fontWeight: '900' }}>
+                   Criar conta
+                 </Text>
+               </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
