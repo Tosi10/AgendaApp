@@ -1,10 +1,62 @@
 import { Ionicons } from '@expo/vector-icons';
-import { FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { INFO_EMPRESA } from '../../constants/Empresa';
 import { useGlobal } from '../../context/GlobalProvider';
 
 export default function Home() {
   const { user, userProfile } = useGlobal();
+
+  // Função para navegar para agendar com dia específico
+  const navegarParaAgendar = (diaSemana) => {
+    // Mapear o nome do dia para o número do dia da semana
+    const mapeamentoDias = {
+      'Segunda': 1,
+      'Terça': 2,
+      'Quarta': 3,
+      'Quinta': 4,
+      'Sexta': 5
+    };
+    
+    const numeroDia = mapeamentoDias[diaSemana];
+    if (numeroDia === undefined) return;
+    
+    // Calcular a data do próximo dia da semana
+    const hoje = new Date();
+    const diaAtual = hoje.getDay(); // 0 = domingo, 1 = segunda, etc.
+    
+    let diasParaAdicionar = numeroDia - diaAtual;
+    
+    // Se o dia já passou nesta semana, ir para a próxima semana
+    if (diasParaAdicionar < 0) {
+      diasParaAdicionar += 7;
+    }
+    
+    // Calcular a data alvo
+    const dataAlvo = new Date(hoje);
+    dataAlvo.setDate(hoje.getDate() + diasParaAdicionar);
+    // Normalizar hora para meio-dia local para evitar virada de dia por timezone
+    dataAlvo.setHours(12, 0, 0, 0);
+    
+    // Formatar a data para exibição
+    const dataFormatada = dataAlvo.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long'
+    });
+    
+    console.log(`🎯 Navegando para ${diaSemana}-feira: ${dataFormatada}`);
+    
+    // Navegar para agendar com a data selecionada
+    router.push({
+      pathname: '/(tabs)/agendar',
+      params: { 
+        dataSelecionada: dataAlvo.toISOString(),
+        diaSemana: diaSemana,
+        dateMs: String(dataAlvo.getTime())
+      }
+    });
+  };
 
   // Dados dos planos
   const planos = [
@@ -85,24 +137,54 @@ export default function Home() {
 
   // Horários da semana com cores diferentes
   const horarios = [
-    { dia: 'Segunda', horarios: '6:30 / 17:30 / 18:30', cor: 'from-blue-500 to-cyan-500' },
-    { dia: 'Terça', horarios: '17:00 / 18:00', cor: 'from-green-500 to-emerald-500' },
-    { dia: 'Quarta', horarios: '6:30 / 10:00 / 17:30 / 18:30', cor: 'from-purple-500 to-pink-500' },
-    { dia: 'Quinta', horarios: '17:00 / 18:00', cor: 'from-orange-500 to-red-500' },
-    { dia: 'Sexta', horarios: '6:30 / 18:00', cor: 'from-indigo-500 to-blue-500' }
+    { dia: 'Segunda', horarios: '6:30 / 17:30 / 18:30', cor: '#2563eb' },
+    { dia: 'Terça', horarios: '17:00 / 18:00', cor: '#059669' },
+    { dia: 'Quarta', horarios: '6:30 / 10:00 / 17:30 / 18:30', cor: '#7c3aed' },
+    { dia: 'Quinta', horarios: '17:00 / 18:00', cor: '#ea580c' },
+    { dia: 'Sexta', horarios: '6:30 / 18:00', cor: '#4338ca' }
   ];
 
   const renderHorario = ({ item }) => (
-    <View className={`bg-gradient-to-br ${item.cor} rounded-xl p-4 mx-2 min-w-[150] shadow-lg border-2 border-gray-800`}>
-      <View className="bg-black/40 rounded-lg p-2 mb-2">
-        <Text className="text-gray-900 font-pextrabold text-base text-center">
-          {item.dia}
-        </Text>
+    <TouchableOpacity
+      onPress={() => navegarParaAgendar(item.dia)}
+      activeOpacity={0.8}
+      className="mx-3 min-w-[160]"
+      style={{
+        elevation: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      }}
+    >
+      {/* Card principal com design moderno */}
+      <View className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+        {/* Header com cor sólida elegante */}
+        <View className="px-5 py-4" style={{ backgroundColor: item.cor }}>
+          <Text className="text-white font-pextrabold text-xl text-center tracking-wide">
+            {item.dia}
+          </Text>
+        </View>
+        
+        {/* Conteúdo do card */}
+        <View className="px-5 py-5 bg-white">
+          {/* Horários */}
+          <Text className="text-gray-700 font-pbold text-base text-center mb-4 leading-6">
+            {item.horarios}
+          </Text>
+          
+          {/* Botão de ação elegante */}
+          <View className="bg-blue-500 rounded-xl py-3 px-4 shadow-lg">
+            <View className="flex-row items-center justify-center">
+              <Ionicons name="calendar" size={18} color="white" />
+              <Text className="text-white font-pbold text-sm ml-2 tracking-wide">
+                AGENDAR
+              </Text>
+            </View>
+          </View>
+        </View>
       </View>
-      <Text className="text-gray-900 font-pextrabold text-sm text-center">
-        {item.horarios}
-      </Text>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderPlano = ({ item }) => (
@@ -215,10 +297,22 @@ export default function Home() {
           </View>
 
           {/* Horários da Semana */}
-          <View className="px-6 py-6 bg-gradient-to-r from-green-50 to-blue-50">
-            <Text className="text-gray-800 font-pextrabold text-2xl mb-4 text-center">
+          <View className="px-6 py-8 bg-gradient-to-r from-gray-50 to-blue-50">
+            <Text className="text-gray-800 font-pextrabold text-3xl mb-6 text-center">
               ⏰ Horários M2
             </Text>
+            
+            {/* Mensagem explicativa */}
+            <View className="bg-blue-100 border border-blue-300 rounded-2xl p-5 mb-6">
+              <View className="flex-row items-center justify-center">
+                <View className="bg-blue-500 rounded-full p-2 mr-3">
+                  <Ionicons name="information-circle" size={20} color="white" />
+                </View>
+                <Text className="text-blue-800 font-pbold text-base text-center">
+                  💡 Toque em qualquer dia para ir direto para agendar!
+                </Text>
+              </View>
+            </View>
             
             <FlatList
               data={horarios}

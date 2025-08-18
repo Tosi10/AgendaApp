@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // REGRAS PARA USUÁRIOS
+    match /usuarios/{userId} {
+      // Usuário pode ler/escrever apenas seu próprio perfil
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Admins podem ler e MODIFICAR todos os usuários
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipoUsuario == 'admin';
+      
+      // TODOS os usuários autenticados podem LER apelidos de outros usuários (para exibição)
+      allow read: if request.auth != null;
+    }
+    
+    // REGRAS PARA AGENDAMENTOS
+    match /agendamentos/{agendamentoId} {
+      // Usuários autenticados podem ler todos os agendamentos
+      allow read: if request.auth != null;
+      // Usuários autenticados podem criar/atualizar/deletar agendamentos
+      allow create, update, delete: if request.auth != null;
+    }
+    
+    // REGRAS PARA CHAT
+    match /chat/{mensagemId} {
+      // Usuários autenticados podem ler/escrever mensagens
+      allow read, write: if request.auth != null;
+    }
+    
+    // REGRAS PARA HISTÓRICO
+    match /historico/{historicoId} {
+      // Usuários autenticados podem ler/escrever seu histórico
+      allow read, write: if request.auth != null;
+    }
+    
+    // REGRAS PARA PLANOS
+    match /planos/{planoId} {
+      // Todos podem ler planos
+      allow read: if true;
+    }
+    
+    // REGRAS PARA HORÁRIOS
+    match /horarios/{horarioId} {
+      // Todos podem ler horários
+      allow read: if true;
+    }
+  }
+}

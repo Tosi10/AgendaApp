@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, deleteDoc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -11,13 +13,43 @@ import { db } from '../../lib/firebase';
 
 export default function Agendar() {
   const { user, userProfile, updateCurrentUserM2Coins } = useGlobal();
+  const params = useLocalSearchParams?.() || {};
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
   const [agendamentos, setAgendamentos] = useState({});
   const [loading, setLoading] = useState(true);
-  
+  const [apelidosUsuarios, setApelidosUsuarios] = useState({}); // Estado para armazenar apelidos
+
   // Estado para seleção de calendário (apenas para admins)
   const [calendarioSelecionado, setCalendarioSelecionado] = useState('alunos');
+  // Aplicar data dos parâmetros ao focar e limpar ao sair
+  useFocusEffect(
+    React.useCallback(() => {
+      const { dataSelecionada, dateMs } = params || {};
+
+      let data = null;
+      if (dateMs) {
+        const ms = Number(dateMs);
+        if (!Number.isNaN(ms)) data = new Date(ms);
+      }
+      if (!data && dataSelecionada) {
+        data = new Date(String(dataSelecionada));
+      }
+      if (data && !Number.isNaN(data.getTime())) {
+        data.setHours(12, 0, 0, 0);
+        // Só atualiza se for diferente do dia atual selecionado
+        if (!selectedDay || selectedDay.toDateString() !== data.toDateString()) {
+          setCurrentWeek(data);
+          setSelectedDay(data);
+        }
+      }
+
+      // Ao desfocar, limpar seleção para evitar reuso na próxima abertura
+      return () => {
+        setSelectedDay(null);
+      };
+    }, [params?.dataSelecionada, params?.dateMs])
+  );
 
   // Verificar se o usuário pode agendar
   const canSchedule = userProfile && userProfile.aprovado;
@@ -33,15 +65,33 @@ export default function Agendar() {
 
     const unsubscribe = onSnapshot(
       collection(db, 'agendamentos'),
-      (snapshot) => {
+      async (snapshot) => {
+        // Processar dados dos agendamentos
         const agendamentosData = {};
         snapshot.forEach((doc) => {
           const data = doc.data();
-          if (data.key) {
+          if (data.key && data.alunos) {
             agendamentosData[data.key] = data.alunos || [];
           }
         });
+        
+        console.log('📊 Agendamentos carregados:', agendamentosData);
         setAgendamentos(agendamentosData);
+        
+        // Buscar apelidos de todos os usuários únicos
+        const todosEmails = [...new Set(Object.values(agendamentosData).flat())];
+        console.log('📧 Emails únicos encontrados:', todosEmails);
+        
+        if (todosEmails.length > 0) {
+          console.log('🔍 Iniciando busca de apelidos...');
+          const apelidos = await buscarApelidos(todosEmails);
+          console.log('💾 Salvando apelidos no estado:', apelidos);
+          setApelidosUsuarios(apelidos);
+        } else {
+          console.log('⚠️ Nenhum email para buscar apelidos');
+          setApelidosUsuarios({});
+        }
+        
         setLoading(false);
       },
       (error) => {
@@ -52,6 +102,51 @@ export default function Agendar() {
 
     return () => unsubscribe();
   }, [user]);
+
+  // Função para buscar apelidos de usuários
+  const buscarApelidos = async (emails) => {
+    try {
+      console.log('🔍 Buscando apelidos para emails:', emails);
+      
+      if (!emails || emails.length === 0) {
+        console.log('⚠️ Nenhum email para buscar');
+        return {};
+      }
+      
+      const apelidos = {};
+      
+      // Buscar todos os usuários de uma vez
+      const usuariosQuery = query(collection(db, 'usuarios'), where('email', 'in', emails));
+      console.log('🔍 Executando query para buscar usuários...');
+      
+      const usuariosSnapshot = await getDocs(usuariosQuery);
+      console.log('✅ Usuários encontrados:', usuariosSnapshot.size);
+      
+      usuariosSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        const email = userData.email;
+        const apelido = userData.apelido || userData.email.split('@')[0];
+        
+        apelidos[email] = apelido;
+        console.log(`👤 ${email} → ${apelido}`);
+      });
+      
+      console.log('🎯 Apelidos encontrados:', apelidos);
+      return apelidos;
+      
+    } catch (error) {
+      console.error('❌ Erro ao buscar apelidos:', error);
+      
+      // Fallback: usar prefixos de email
+      const apelidos = {};
+      emails.forEach(email => {
+        apelidos[email] = email.split('@')[0];
+      });
+      
+      console.log('🔄 Usando fallback (prefixos):', apelidos);
+      return apelidos;
+    }
+  };
 
   // Gerar dias da semana atual
   const getWeekDays = (date) => {
@@ -81,6 +176,22 @@ export default function Agendar() {
   const prevWeek = () => {
     const prev = new Date(currentWeek);
     prev.setDate(currentWeek.getDate() - 7);
+    setCurrentWeek(prev);
+    setSelectedDay(null);
+  };
+
+  // Navegar para próximo mês
+  const nextMonth = () => {
+    const next = new Date(currentWeek);
+    next.setMonth(currentWeek.getMonth() + 1);
+    setCurrentWeek(next);
+    setSelectedDay(null);
+  };
+
+  // Navegar para mês anterior
+  const prevMonth = () => {
+    const prev = new Date(currentWeek);
+    prev.setMonth(currentWeek.getMonth() - 1);
     setCurrentWeek(prev);
     setSelectedDay(null);
   };
@@ -345,8 +456,14 @@ export default function Agendar() {
         console.log('🔍 DEBUG: Coins após devolução:', userProfile.m2Coins + 1);
         
         try {
-          await updateCurrentUserM2Coins(userProfile.m2Coins + 1);
+          // IMPORTANTE: Atualizar o estado local ANTES de salvar no Firestore
+          const novosCoins = userProfile.m2Coins + 1;
+          await updateCurrentUserM2Coins(novosCoins);
           console.log('🔍 DEBUG: Coins devolvidos com sucesso!');
+          
+          // Atualizar o estado local para refletir a mudança imediatamente
+          userProfile.m2Coins = novosCoins;
+          
           Alert.alert('Cancelado', 'Seu agendamento foi cancelado. 1 M2 Coin foi devolvido.');
         } catch (error) {
           console.error('🔍 DEBUG: Erro ao devolver coins:', error);
@@ -359,6 +476,7 @@ export default function Agendar() {
         Alert.alert('Cancelado', 'Seu agendamento foi cancelado.');
       }
       
+      // Remover o usuário da lista de agendamentos
       novosAgendamentos[key] = novosAgendamentos[key].filter((_, i) => i !== userIndex);
       
       // Salvar no Firestore
@@ -410,29 +528,31 @@ export default function Agendar() {
 
           {/* Calendário semanal */}
           <View className="bg-blue-600 px-6 py-16">
-            {/* Header do calendário com navegação */}
+            {/* Header do calendário com navegação de MESES */}
             <View className="flex-row items-center justify-between mb-4">
               <TouchableOpacity
-                onPress={prevWeek}
+                onPress={prevMonth}
                 className="bg-blue-500 rounded-full p-2"
               >
                 <Ionicons name="chevron-back" size={24} color="white" />
               </TouchableOpacity>
-              
+               
               <Text className="text-white font-pextrabold text-xl">
                 {currentWeek.toLocaleDateString('pt-BR', { 
                   month: 'long', 
                   year: 'numeric' 
                 })}
               </Text>
-              
+               
               <TouchableOpacity
-                onPress={nextWeek}
+                onPress={nextMonth}
                 className="bg-blue-500 rounded-full p-2"
               >
                 <Ionicons name="chevron-forward" size={24} color="white" />
               </TouchableOpacity>
             </View>
+
+            {/* Navegação de semanas movida para as laterais dos dias (sem faixa de texto) */}
             
             {/* Seletor de Calendário para Admins */}
             {isAdmin && (
@@ -487,32 +607,55 @@ export default function Agendar() {
               </View>
             </View>
 
-            {/* Calendário semanal */}
-            <View className="flex-row justify-between">
-              {weekDays.map((day, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => setSelectedDay(day)}
-                  className={`flex-1 items-center py-3 rounded-lg mx-1 ${
-                    isSelected(day) 
-                      ? 'bg-yellow-400' 
-                      : isToday(day) 
-                        ? 'bg-blue-500' 
-                        : 'bg-blue-700'
-                  }`}
-                >
-                  <Text className={`font-pregular text-xs ${
-                    isSelected(day) ? 'text-gray-800' : 'text-white'
-                  }`}>
-                    {formatDayName(day)}
-                  </Text>
-                  <Text className={`font-pbold text-lg ${
-                    isSelected(day) ? 'text-gray-800' : 'text-white'
-                  }`}>
-                    {day.getDate()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Calendário semanal: apenas segunda a sexta, com setas nas extremidades */}
+            <View className="flex-row items-center justify-between">
+              {/* Seta esquerda (semana anterior) */}
+              <TouchableOpacity
+                onPress={prevWeek}
+                className="bg-blue-400 rounded-full p-2 mr-2"
+                activeOpacity={0.8}
+              >
+                <Ionicons name="chevron-back" size={20} color="white" />
+              </TouchableOpacity>
+
+              {/* Dias úteis (seg a sex) */}
+              <View className="flex-1 flex-row justify-between">
+                {weekDays
+                  .filter((_, idx) => idx >= 1 && idx <= 5) /* 0=Dom, 6=Sáb */
+                  .map((day, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => setSelectedDay(day)}
+                      className={`flex-1 items-center py-3 rounded-lg mx-1 border-4 ${
+                        isSelected(day)
+                          ? 'bg-yellow-400 border-yellow-500'
+                          : isToday(day)
+                            ? 'bg-blue-500 border-blue-600'
+                            : 'bg-blue-700 border-blue-800'
+                      }`}
+                    >
+                      <Text className={`font-pregular text-xs ${
+                        isSelected(day) ? 'text-gray-800' : 'text-white'
+                      }`}>
+                        {formatDayName(day)}
+                      </Text>
+                      <Text className={`font-pbold text-lg ${
+                        isSelected(day) ? 'text-gray-800' : 'text-white'
+                      }`}>
+                        {day.getDate()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+
+              {/* Seta direita (próxima semana) */}
+              <TouchableOpacity
+                onPress={nextWeek}
+                className="bg-blue-400 rounded-full p-2 ml-2"
+                activeOpacity={0.8}
+              >
+                <Ionicons name="chevron-forward" size={20} color="white" />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -548,133 +691,296 @@ export default function Agendar() {
                   </Text>
                 </View>
               ) : (
-                getHorariosDisponiveis().map((horario) => {
-                  const key = `${selectedDay.toDateString()}_${horario}`;
-                  const alunos = agendamentos[key] || [];
-                  const userAgendado = isUserAgendado(selectedDay, horario);
-                  
-                                     return (
-                     <View key={horario} className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-blue-500">
-                      <View className="flex-row items-center justify-between mb-3">
-                        <Text className="text-gray-800 font-pbold text-lg">
-                          {horario}
-                        </Text>
-                        <Text className="text-gray-500 font-pregular text-sm">
-                          {alunos.length}/{mostrarCalendarioPersonal ? '1' : '8'} {mostrarCalendarioPersonal ? 'aluno' : 'alunos'}
-                        </Text>
+                <View className="space-y-4">
+                  {/* Para Personal Training - Botões clicáveis */}
+                  {mostrarCalendarioPersonal ? (
+                    <View className="space-y-4">
+                      {/* Grid de botões de horários */}
+                      <View className="flex-row flex-wrap justify-center">
+                        {getHorariosDisponiveis().map((horario) => {
+                          const key = `${selectedDay.toDateString()}_${horario}`;
+                          const alunos = agendamentos[key] || [];
+                          const isOcupado = alunos.length > 0;
+                          const isPassado = isClassPassed(selectedDay, horario);
+                          const userAgendado = isUserAgendado(selectedDay, horario);
+                          
+                          return (
+                            <TouchableOpacity
+                              key={horario}
+                              onPress={() => {
+                                // Verificar se pode agendar/desagendar
+                                if (isPassado) return; // Horário passado não pode ser alterado
+                                
+                                // Toggle agendamento
+                                toggleAgendamento(selectedDay, horario);
+                              }}
+                              className={`rounded-lg border-2 w-20 h-16 items-center justify-center m-1 ${
+                                isPassado
+                                  ? 'bg-gray-400 border-gray-400' // Horário passado
+                                  : isOcupado
+                                    ? 'bg-purple-500 border-purple-500' // Ocupado
+                                    : 'bg-green-500 border-green-500' // Disponível
+                              }`}
+                              disabled={isPassado}
+                              activeOpacity={0.8}
+                            >
+                              <Text className={`font-pextrabold text-base ${
+                                isPassado ? 'text-gray-800' : 'text-black'
+                              }`}>
+                                {horario}
+                              </Text>
+                              <Text className={`font-pregular text-xs ${
+                                isPassado ? 'text-gray-600' : 'text-black'
+                              }`}>
+                                {isPassado ? 'Passado' : isOcupado ? 'Ocupado' : 'Disponível'}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
-
-                      {/* Botão para agendar/desagendar */}
-                      <TouchableOpacity
-                        onPress={() => toggleAgendamento(selectedDay, horario)}
-                        className={`p-3 rounded-lg mb-3 ${
-                          userAgendado 
-                            ? (isClassPassed(selectedDay, horario) 
-                                ? 'bg-gray-400' 
-                                : canCancelClass(selectedDay, horario)
-                                  ? 'bg-red-500'
-                                  : 'bg-yellow-500')
-                            : isClassPassed(selectedDay, horario)
-                              ? 'bg-gray-400'
-                              : alunos.length >= (mostrarCalendarioPersonal ? 1 : 8)
-                                ? (mostrarCalendarioPersonal ? 'bg-purple-500' : 'bg-gray-300')
-                                : 'bg-blue-600'
-                        }`}
-                        disabled={!userAgendado && (alunos.length >= (mostrarCalendarioPersonal ? 1 : 8) || isClassPassed(selectedDay, horario)) || (userAgendado && !canCancelClass(selectedDay, horario))}
-                      >
-                        <Text className="text-white font-pbold text-center">
-                          {userAgendado 
-                            ? (isClassPassed(selectedDay, horario)
-                                ? 'Aula Realizada'
-                                : canCancelClass(selectedDay, horario)
-                                  ? 'Cancelar Aula'
-                                  : 'Cancelamento Bloqueado')
-                            : isClassPassed(selectedDay, horario)
-                              ? 'Horário Passado'
-                              : alunos.length >= (mostrarCalendarioPersonal ? 1 : 8)
-                                ? (mostrarCalendarioPersonal ? 'Horário Ocupado' : 'Horário Lotado')
-                                : 'Agendar Aula'
-                          }
-                        </Text>
-                      </TouchableOpacity>
-
-                      {/* Status da aula e informações de cancelamento */}
-                      {userAgendado && (
-                        <View className="mb-3">
-                          {isClassPassed(selectedDay, horario) ? (
-                            <View className="bg-gray-100 rounded-lg p-3 border border-gray-300">
+                      
+                      {/* Cards de agendamentos para horários ocupados */}
+                      {getHorariosDisponiveis().map((horario) => {
+                        const key = `${selectedDay.toDateString()}_${horario}`;
+                        const alunos = agendamentos[key] || [];
+                        
+                        if (alunos.length === 0) return null; // Só mostrar cards para horários ocupados
+                        
+                        // Para usuários personal, mostrar apenas se eles mesmos estão agendados
+                        if (isPersonalTraining && !alunos.includes(user?.email)) {
+                          return null; // Não mostrar cards de outros alunos para personal
+                        }
+                        
+                        return (
+                          <View key={horario} className="bg-white rounded-xl p-4 shadow-lg border-2 border-purple-500">
+                            <View className="flex-row items-center justify-between mb-3">
                               <View className="flex-row items-center">
-                                <Ionicons name="checkmark-circle" size={16} color="#6B7280" />
-                                <Text className="text-gray-600 font-pregular text-sm ml-2">
-                                  Aula já foi realizada
+                                <Ionicons name="time" size={20} color="#8B5CF6" />
+                                <Text className="text-purple-800 font-pextrabold text-lg ml-2">
+                                  {horario}
+                                </Text>
+                              </View>
+                              <View className="bg-purple-100 rounded-full px-3 py-1">
+                                <Text className="text-purple-700 font-pbold text-sm">
+                                  {isPersonalTraining ? 'Seu Horário' : 'Ocupado'}
                                 </Text>
                               </View>
                             </View>
-                          ) : !canCancelClass(selectedDay, horario) ? (
-                            <View className="bg-yellow-100 rounded-lg p-3 border border-yellow-300">
-                              <View className="flex-row items-center">
-                                <Ionicons name="time" size={16} color="#D97706" />
-                                <Text className="text-yellow-700 font-pregular text-sm ml-2">
-                                  Cancelamento permitido apenas até 1 hora antes da aula
+                            
+                            {/* Informações do aluno agendado */}
+                            <View className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                              <Text className="text-purple-800 font-pbold text-sm mb-2">
+                                {isPersonalTraining ? 'Seu Agendamento:' : 'Aluno Agendado:'}
+                              </Text>
+                              {alunos.map((aluno, index) => {
+                                // Para personal, mostrar apenas se for o próprio usuário
+                                if (isPersonalTraining && aluno !== user?.email) {
+                                  return null;
+                                }
+                                
+                                return (
+                                  <View key={index} className="flex-row items-center bg-white p-3 rounded-lg border border-purple-300">
+                                    <Ionicons 
+                                      name="person-circle" 
+                                      size={24} 
+                                      color="#8B5CF6" 
+                                    />
+                                    <View className="ml-3 flex-1">
+                                      <Text className="text-purple-800 font-pbold text-base">
+                                        {(() => {
+                                          if (aluno === user?.email) {
+                                            const apelido = userProfile?.apelido || user?.displayName || 'Você';
+                                            console.log(`🏃‍♂️ Personal - Usuário atual (${aluno}): ${apelido}`);
+                                            return apelido;
+                                          } else {
+                                            const apelido = apelidosUsuarios[aluno] || aluno.split('@')[0];
+                                            console.log(`🏃‍♂️ Personal - Outro usuário (${aluno}): ${apelido} (do estado: ${apelidosUsuarios[aluno]})`);
+                                            return apelido;
+                                          }
+                                        })()}
+                                      </Text>
+                                      <Text className="text-purple-600 font-pregular text-sm">
+                                        {aluno}
+                                      </Text>
+                                    </View>
+                                    <View className="flex-row items-center space-x-2">
+                                      <View className="bg-green-100 rounded-full px-2 py-1">
+                                        <Text className="text-green-700 font-pbold text-xs">
+                                          {aluno === user?.email ? 'Seu Horário' : 'Confirmado'}
+                                        </Text>
+                                      </View>
+                                      
+                                      {/* Botão de Cancelar para usuários personal */}
+                                      {isPersonalTraining && aluno === user?.email && !isClassPassed(selectedDay, horario) && (
+                                        <TouchableOpacity
+                                          onPress={() => toggleAgendamento(selectedDay, horario)}
+                                          className="bg-red-500 rounded-full px-3 py-1"
+                                          activeOpacity={0.8}
+                                        >
+                                          <Text className="text-white font-pbold text-xs">
+                                            Cancelar
+                                          </Text>
+                                        </TouchableOpacity>
+                                      )}
+                                    </View>
+                                  </View>
+                                );
+                              })}
+                            </View>
+                            
+                            {/* Informações adicionais */}
+                            <View className="mt-3 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                              <View className="flex-row items-center justify-between">
+                                <Text className="text-blue-800 font-pregular text-sm">
+                                  Data: {formatDate(selectedDay)}
+                                </Text>
+                                <Text className="text-blue-800 font-pregular text-sm">
+                                  Dia: {formatDayName(selectedDay)}
                                 </Text>
                               </View>
                             </View>
-                          ) : (
-                            <View className="bg-green-100 rounded-lg p-3 border border-green-300">
-                              <View className="flex-row items-center">
-                                <Ionicons name="checkmark-circle" size={16} color="#059669" />
-                                <Text className="text-green-700 font-pregular text-sm ml-2">
-                                  Cancelamento permitido até 1 hora antes da aula
-                                </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    // Para alunos normais - manter o layout atual
+                    getHorariosDisponiveis().map((horario) => {
+                      const key = `${selectedDay.toDateString()}_${horario}`;
+                      const alunos = agendamentos[key] || [];
+                      const userAgendado = isUserAgendado(selectedDay, horario);
+                      
+                      return (
+                        <View key={horario} className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-blue-500">
+                          <View className="flex-row items-center justify-between mb-3">
+                            <Text className="text-gray-800 font-pbold text-lg">
+                              {horario}
+                            </Text>
+                            <Text className="text-gray-500 font-pregular text-sm">
+                              {alunos.length}/8 alunos
+                            </Text>
+                          </View>
+
+                          {/* Botão para agendar/desagendar */}
+                          <TouchableOpacity
+                            onPress={() => toggleAgendamento(selectedDay, horario)}
+                            className={`p-3 rounded-lg mb-3 ${
+                              userAgendado 
+                                ? (isClassPassed(selectedDay, horario) 
+                                    ? 'bg-gray-400' 
+                                    : canCancelClass(selectedDay, horario)
+                                      ? 'bg-red-500'
+                                      : 'bg-yellow-500')
+                                : isClassPassed(selectedDay, horario)
+                                  ? 'bg-gray-400'
+                                  : alunos.length >= 8
+                                    ? 'bg-gray-300'
+                                    : 'bg-blue-600'
+                            }`}
+                            disabled={!userAgendado && (alunos.length >= 8 || isClassPassed(selectedDay, horario)) || (userAgendado && !canCancelClass(selectedDay, horario))}
+                          >
+                            <Text className="text-white font-pbold text-center">
+                              {userAgendado 
+                                ? (isClassPassed(selectedDay, horario)
+                                    ? 'Aula Realizada'
+                                    : canCancelClass(selectedDay, horario)
+                                      ? 'Cancelar Aula'
+                                      : 'Cancelamento Bloqueado')
+                                : isClassPassed(selectedDay, horario)
+                                  ? 'Horário Passado'
+                                  : alunos.length >= 8
+                                    ? 'Horário Lotado'
+                                    : 'Agendar Aula'
+                              }
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* Status da aula e informações de cancelamento */}
+                          {userAgendado && (
+                            <View className="mb-3">
+                              {isClassPassed(selectedDay, horario) ? (
+                                <View className="bg-gray-100 rounded-lg p-3 border border-gray-300">
+                                  <View className="flex-row items-center">
+                                    <Ionicons name="checkmark-circle" size={16} color="#6B7280" />
+                                    <Text className="text-gray-600 font-pregular text-sm ml-2">
+                                      Aula já foi realizada
+                                    </Text>
+                                  </View>
+                                </View>
+                              ) : !canCancelClass(selectedDay, horario) ? (
+                                <View className="bg-yellow-100 rounded-lg p-3 border border-yellow-300">
+                                  <View className="flex-row items-center">
+                                    <Ionicons name="time" size={16} color="#D97706" />
+                                    <Text className="text-yellow-700 font-pregular text-sm ml-2">
+                                      Cancelamento permitido apenas até 1 hora antes da aula
+                                    </Text>
+                                  </View>
+                                </View>
+                              ) : (
+                                <View className="bg-green-100 rounded-lg p-3 border border-green-300">
+                                  <View className="flex-row items-center">
+                                    <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                                    <Text className="text-green-700 font-pregular text-sm ml-2">
+                                      Cancelamento permitido até 1 hora antes da aula
+                                    </Text>
+                                  </View>
+                                </View>
+                              )}
+                            </View>
+                          )}
+
+                          {/* Status para horários passados (quando não agendado) */}
+                          {!userAgendado && isClassPassed(selectedDay, horario) && (
+                            <View className="mb-3">
+                              <View className="bg-gray-100 rounded-lg p-3 border border-gray-300">
+                                <View className="flex-row items-center">
+                                  <Ionicons name="time-outline" size={16} color="#6B7280" />
+                                  <Text className="text-gray-600 font-pregular text-sm ml-2">
+                                    Este horário já passou
+                                  </Text>
+                                </View>
                               </View>
                             </View>
                           )}
-                        </View>
-                      )}
 
-                      {/* Status para horários passados (quando não agendado) */}
-                      {!userAgendado && isClassPassed(selectedDay, horario) && (
-                        <View className="mb-3">
-                          <View className="bg-gray-100 rounded-lg p-3 border border-gray-300">
-                            <View className="flex-row items-center">
-                              <Ionicons name="time-outline" size={16} color="#6B7280" />
-                              <Text className="text-gray-600 font-pregular text-sm ml-2">
-                                Este horário já passou
+                          {/* Lista de alunos */}
+                          <View className="space-y-2">
+                            {alunos.map((aluno, index) => (
+                              <View key={index} className="flex-row items-center bg-gray-50 p-3 rounded-lg">
+                                <Ionicons 
+                                  name="person" 
+                                  size={16} 
+                                  color={aluno === user?.email ? '#3b82f6' : '#6b7280'} 
+                                />
+                                <Text className={`ml-2 font-pregular ${
+                                  aluno === user?.email ? 'text-blue-600 font-pbold' : 'text-gray-800'
+                                }`}>
+                                  {(() => {
+                                    if (aluno === user?.email) {
+                                      const apelido = userProfile?.apelido || user?.displayName || user?.email?.split('@')[0] || 'Você';
+                                      console.log(`👤 Usuário atual (${aluno}): ${apelido}`);
+                                      return apelido;
+                                    } else {
+                                      const apelido = apelidosUsuarios[aluno] || aluno.split('@')[0];
+                                      console.log(`👤 Outro usuário (${aluno}): ${apelido} (do estado: ${apelidosUsuarios[aluno]})`);
+                                      return apelido;
+                                    }
+                                  })()}
+                                </Text>
+                              </View>
+                            ))}
+                            
+                            {alunos.length === 0 && (
+                              <Text className="text-gray-400 font-pregular text-center py-4">
+                                Nenhum aluno agendado
                               </Text>
-                            </View>
+                            )}
                           </View>
                         </View>
-                      )}
-
-                      {/* Lista de alunos */}
-                      <View className="space-y-2">
-                        {alunos.map((aluno, index) => (
-                          <View key={index} className="flex-row items-center bg-gray-50 p-3 rounded-lg">
-                            <Ionicons 
-                              name="person" 
-                              size={16} 
-                              color={aluno === user?.email ? '#3b82f6' : '#6b7280'} 
-                            />
-                            <Text className={`ml-2 font-pregular ${
-                              aluno === user?.email ? 'text-blue-600 font-pbold' : 'text-gray-800'
-                            }`}>
-                              {aluno === user?.email 
-                                ? user?.displayName || user?.email?.split('@')[0] || 'Você'
-                                : aluno.split('@')[0]
-                              }
-                            </Text>
-                          </View>
-                        ))}
-                        
-                        {alunos.length === 0 && (
-                          <Text className="text-gray-400 font-pregular text-center py-4">
-                            Nenhum aluno agendado
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  );
-                })
+                      );
+                    })
+                  )}
+                </View>
               )}
             </View>
           )}

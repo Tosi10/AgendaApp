@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { collection, doc, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
+import { useFocusEffect } from '@react-navigation/native';
+import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { db } from '../../lib/firebase';
 
 import LoadingScreen from '../../components/LoadingScreen';
 import { INFO_EMPRESA } from '../../constants/Empresa';
 import { PLANOS_DISPONIVEIS, PLANO_PERSONAL_TRAINING } from '../../constants/Planos';
 import { useGlobal } from '../../context/GlobalProvider';
-import { db } from '../../lib/firebase';
 
 export default function Perfil() {
   const { user, signOut, userProfile, updateApelido, updateUserM2Coins, approveUser, rejectUser, fetchAllUsers } = useGlobal();
@@ -40,82 +41,197 @@ export default function Perfil() {
   // Estado para busca de usuários
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Estados para paginação do histórico
-  const [historicoLimitado, setHistoricoLimitado] = useState([]);
-  const [historicoVisivel, setHistoricoVisivel] = useState(3);
-  const [podeCarregarMais, setPodeCarregarMais] = useState(false);
+  // Estado para controlar qual tab está ativa
+  const [tabAtiva, setTabAtiva] = useState('proxima'); // 'proxima', 'agendadas', 'realizadas'
+
+  // Estados para paginação
+  const [aulasAgendadasLimit, setAulasAgendadasLimit] = useState(3);
+  const [aulasRealizadasLimit, setAulasRealizadasLimit] = useState(3);
 
   const isAdmin = userProfile?.tipoUsuario === 'admin';
   const m2Coins = userProfile?.m2Coins || 0;
   
-  // Carregar histórico de aulas do Firestore (apenas para alunos)
+  // Resetar tab ativa quando a aba ganhar foco
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Aba Perfil ganhou foco - Resetando tab para "proxima"');
+      setTabAtiva('proxima');
+      // Resetar limites de paginação
+      setAulasAgendadasLimit(3);
+      setAulasRealizadasLimit(3);
+    }, [])
+  );
+
+  // Função para buscar informações dos usuários (apelidos)
+  const buscarInfoUsuarios = async (emails) => {
+    try {
+      const usuariosInfo = [];
+      for (const email of emails) {
+        const userQuery = query(collection(db, 'usuarios'), where('email', '==', email));
+        const userSnapshot = await getDocs(userQuery);
+        if (!userSnapshot.empty) {
+          const userData = userSnapshot.docs[0].data();
+          usuariosInfo.push({
+            email: email,
+            apelido: userData.apelido || email.split('@')[0], // Fallback para parte do email se não tiver apelido
+            tipoUsuario: userData.tipoUsuario || 'aluno'
+          });
+        }
+      }
+      return usuariosInfo;
+    } catch (error) {
+      console.error('❌ Erro ao buscar informações dos usuários:', error);
+      return emails.map(email => ({
+        email: email,
+        apelido: email.split('@')[0],
+        tipoUsuario: 'aluno'
+      }));
+    }
+  };
+
+  // Função para parsear data no formato "Tue Aug 19 2025"
+  const parsearData = (dataStr) => {
+    try {
+      // Mapeamento de meses abreviados para números
+      const meses = {
+        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+      };
+      
+      // Parsear "Tue Aug 19 2025"
+      const partes = dataStr.split(' ');
+      if (partes.length === 4) {
+        const diaSemana = partes[0]; // Tue
+        const mes = partes[1]; // Aug
+        const dia = parseInt(partes[2]); // 19
+        const ano = parseInt(partes[3]); // 2025
+        
+        const mesNumero = meses[mes];
+        if (mesNumero !== undefined && !isNaN(dia) && !isNaN(ano)) {
+          return new Date(ano, mesNumero, dia);
+        }
+      }
+      
+      // Fallback: tentar criar data diretamente
+      return new Date(dataStr);
+    } catch (error) {
+      console.error('❌ Erro ao parsear data:', dataStr, error);
+      return null;
+    }
+  };
+
+  // Funções para paginação
+  const carregarMaisAulasAgendadas = () => {
+    setAulasAgendadasLimit(prev => prev + 3);
+  };
+
+  const carregarMaisAulasRealizadas = () => {
+    setAulasRealizadasLimit(prev => prev + 3);
+  };
+
+  const fecharAulasAgendadas = () => {
+    setAulasAgendadasLimit(3);
+  };
+
+  const fecharAulasRealizadas = () => {
+    setAulasRealizadasLimit(3);
+  };
+
+  // Carregar agendamentos do usuário para mostrar a próxima aula
   useEffect(() => {
     if (!user || isAdmin) {
       setLoading(false);
       return;
     }
 
+    console.log('🔄 Carregando agendamentos para:', user.email);
+
     const unsubscribe = onSnapshot(
       collection(db, 'agendamentos'),
       (snapshot) => {
         const aulasData = [];
+        console.log('📊 Total de documentos recebidos:', snapshot.size);
+        
         snapshot.forEach((doc) => {
           const data = doc.data();
+          console.log('📄 Documento:', doc.id, 'Key:', data.key, 'Alunos:', data.alunos);
+          
           if (data.key && data.alunos && data.alunos.includes(user.email)) {
             // Extrair data e horário da chave
             const [dataStr, horario] = data.key.split('_');
-            const dataAula = new Date(dataStr);
             
-            aulasData.push({
-              id: doc.id,
-              data: dataAula,
-              horario: horario,
-              status: dataAula < new Date() ? 'realizada' : 'agendada'
-            });
+            try {
+              // Criar data de forma mais robusta
+              let dataCompleta;
+              
+              // Parsear a data usando nossa função personalizada
+              const dataBase = parsearData(dataStr);
+              if (!dataBase) {
+                throw new Error('Não foi possível parsear a data');
+              }
+              
+              // Adicionar o horário à data
+              const [hora, minuto] = horario.split(':');
+              dataBase.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+              dataCompleta = dataBase;
+              
+              console.log('🔧 Construindo data da aula:');
+              console.log('🔧 Data string:', dataStr);
+              console.log('🔧 Horário string:', horario);
+              console.log('🔧 Data base parseada:', dataBase.toLocaleDateString());
+              console.log('🔧 Data final com horário:', dataCompleta.toLocaleString());
+              console.log('🔧 Data construída (timestamp):', dataCompleta.getTime());
+              
+              // Verificar se a data foi construída corretamente
+              if (isNaN(dataCompleta.getTime())) {
+                console.error('❌ ERRO: Data inválida construída!');
+                return; // Pular esta aula se a data for inválida
+              }
+              
+              // Determinar status baseado na data atual
+              const agora = new Date();
+              const status = dataCompleta > agora ? 'agendada' : 'realizada';
+              
+              console.log('🔧 Status da aula:', status);
+              console.log('🔧 Data da aula vs agora:', dataCompleta.toLocaleString(), 'vs', agora.toLocaleString());
+              
+              const aula = {
+                id: doc.id,
+                data: dataCompleta,
+                horario: horario,
+                status: status,
+                alunos: data.alunos || [], // Array de emails dos alunos
+                alunosInfo: [] // Array com informações dos alunos (será preenchido depois)
+              };
+              
+              aulasData.push(aula);
+              console.log('✅ Aula adicionada:', aula);
+              
+            } catch (error) {
+              console.error('❌ ERRO ao processar aula:', error);
+              console.error('❌ Chave:', data.key);
+              console.error('❌ Data string:', dataStr);
+              console.error('❌ Horário:', horario);
+              // Continuar com a próxima aula em vez de quebrar tudo
+            }
           }
         });
         
+        console.log('🎯 Total de aulas encontradas para o usuário:', aulasData.length);
+        console.log('📅 Aulas agendadas:', aulasData.filter(a => a.status === 'agendada').length);
+        console.log('✅ Aulas realizadas:', aulasData.filter(a => a.status === 'realizada').length);
+        
         setHistoricoAulas(aulasData);
-        
-        // Processar histórico limitado
-        const aulasRealizadas = aulasData
-          .filter(aula => aula.status === 'realizada')
-          .sort((a, b) => b.data - a.data);
-        
-        const limitado = aulasRealizadas.slice(0, historicoVisivel);
-        setHistoricoLimitado(limitado);
-        setPodeCarregarMais(aulasRealizadas.length > historicoVisivel);
-        
         setLoading(false);
       },
       (error) => {
-        console.error('Erro ao carregar histórico:', error);
+        console.error('❌ Erro ao carregar agendamentos:', error);
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [user, isAdmin]);
-
-  // Função para carregar mais registros
-  const carregarMaisHistorico = () => {
-    const novoLimite = historicoVisivel + 3;
-    const aulasRealizadas = historicoAulas.filter(aula => aula.status === 'realizada');
-    const limitado = aulasRealizadas.slice(0, novoLimite);
-    
-    setHistoricoLimitado(limitado);
-    setHistoricoVisivel(novoLimite);
-    setPodeCarregarMais(aulasRealizadas.length > novoLimite);
-  };
-
-  // Função para resetar paginação
-  const resetarPaginação = () => {
-    setHistoricoVisivel(3);
-    const aulasRealizadas = historicoAulas.filter(aula => aula.status === 'realizada');
-    const limitado = aulasRealizadas.slice(0, 3);
-    setHistoricoLimitado(limitado);
-    setPodeCarregarMais(aulasRealizadas.length > 3);
-  };
 
   // Carregar usuários para administradores
   useEffect(() => {
@@ -405,166 +521,362 @@ export default function Perfil() {
             </Text>
           </View>
 
-          {/* Estatísticas Rápidas */}
+          {/* Estatísticas do usuário */}
           {!isAdmin && (
-            <View className="px-6 py-0 -mt-4 mb-4">
-              <View className="flex-row space-x-3">
-                <View className="flex-1 bg-white rounded-xl p-4 shadow-lg border-2 border-blue-600">
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="calendar" size={20} color="#3B82F6" />
-                    <Text className="text-gray-600 font-pregular text-sm ml-2">
-                      Aulas Agendadas
-                    </Text>
+            <View className="px-6 py-6 bg-white">
+              <View className="flex-row space-x-4">
+                {/* Aulas Agendadas */}
+                <TouchableOpacity 
+                  onPress={() => setTabAtiva('agendadas')}
+                  className={`flex-1 bg-blue-200 rounded-xl p-4 border-4 ${
+                    tabAtiva === 'agendadas' ? 'border-blue-500 bg-blue-200' : 'border-blue-600'
+                  }`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <Ionicons name="calendar" size={20} color="#1E40AF" />
+                      <Text className="text-blue-800 font-pbold text-sm ml-2">
+                        Aulas Agendadas
+                      </Text>
+                    </View>
                   </View>
-                  <Text className="text-blue-600 font-pextrabold text-2xl">
+                  <Text className={`font-pextrabold text-2xl mt-2 ${
+                    tabAtiva === 'agendadas' ? 'text-blue-900' : 'text-blue-600'
+                  }`}>
                     {historicoAulas.filter(aula => aula.status === 'agendada').length}
                   </Text>
-                </View>
-                
-                <View className="flex-1 bg-white rounded-xl p-4 shadow-lg border-2 border-green-600">
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="calendar" size={20} color="#10B981" />
-                    <Text className="text-gray-600 font-pregular text-sm ml-2">
-                      Aulas Realizadas
-                    </Text>
+                </TouchableOpacity>
+
+                {/* Aulas Realizadas */}
+                <TouchableOpacity 
+                  onPress={() => setTabAtiva('realizadas')}
+                  className={`flex-1 bg-green-200 rounded-xl p-4 border-4 ${
+                    tabAtiva === 'realizadas' ? 'border-green-500 bg-green-200' : 'border-green-600'
+                  }`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                      <Text className="text-green-800 font-pbold text-sm ml-2">
+                        Aulas Realizadas
+                      </Text>
+                    </View>
                   </View>
-                  <Text className="text-green-600 font-pextrabold text-2xl">
+                  <Text className={`font-pextrabold text-2xl mt-2 ${
+                    tabAtiva === 'realizadas' ? 'text-green-900' : 'text-green-600'
+                  }`}>
                     {historicoAulas.filter(aula => aula.status === 'realizada').length}
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
           )}
 
-          {/* Histórico de Aulas */}
+          {/* Conteúdo baseado na tab ativa */}
           {!isAdmin && (
             <View className="px-6 py-6 bg-white">
+              {/* Header baseado na tab ativa */}
               <View className="flex-row items-center justify-between mb-6">
                 <View className="flex-row items-center">
-                  <Ionicons name="time" size={24} color="#1E40AF" />
+                  <Ionicons 
+                    name={tabAtiva === 'proxima' ? 'calendar' : tabAtiva === 'agendadas' ? 'time' : 'checkmark-circle'} 
+                    size={24} 
+                    color={tabAtiva === 'proxima' ? '#1E40AF' : tabAtiva === 'agendadas' ? '#3B82F6' : '#059669'} 
+                  />
                   <Text className="text-gray-800 font-pextrabold text-2xl ml-2">
-                    Histórico de Aulas
+                    {tabAtiva === 'proxima' ? 'Próxima Aula' : 
+                     tabAtiva === 'agendadas' ? 'Aulas Agendadas' : 'Histórico de Aulas'}
                   </Text>
                 </View>
-                <View className="bg-blue-100 rounded-full px-3 py-1">
-                  <Text className="text-blue-800 font-pbold text-sm">
-                    {historicoLimitado.length} de {historicoAulas.filter(aula => aula.status === 'realizada').length}
+                <View className={`rounded-full px-3 py-1 ${
+                  tabAtiva === 'proxima' ? 'bg-green-100' : 
+                  tabAtiva === 'agendadas' ? 'bg-blue-100' : 'bg-green-100'
+                }`}>
+                  <Text className={`font-pbold text-sm ${
+                    tabAtiva === 'proxima' ? 'text-green-800' : 
+                    tabAtiva === 'agendadas' ? 'text-blue-800' : 'text-green-800'
+                  }`}>
+                    {tabAtiva === 'proxima' ? 'Próximo Agendamento' : 
+                     tabAtiva === 'agendadas' ? 'Futuras' : 'Realizadas'}
                   </Text>
                 </View>
               </View>
 
-              {historicoLimitado.length === 0 ? (
-                <View className="bg-gray-50 rounded-xl p-8 items-center">
-                  <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
-                  <Text className="text-gray-500 font-pregular text-lg text-center mt-4">
-                    Nenhuma aula agendada ainda
-                  </Text>
-                  <Text className="text-gray-400 font-pregular text-sm text-center mt-2">
-                    Agende sua primeira aula na aba "Agendar"
-                  </Text>
-                </View>
-              ) : (
-                <View className="space-y-3">
-                  {historicoLimitado.map((aula) => (
-                    <View key={aula.id} className="bg-white rounded-xl p-4 shadow-lg border-2 border-blue-600">
-                      <View className="flex-row items-center justify-between mb-3">
+              {/* Conteúdo baseado na tab ativa */}
+              {(() => {
+                if (tabAtiva === 'proxima') {
+                  // Mostrar próxima aula
+                  console.log('🔍 Calculando próxima aula...');
+                  console.log('📊 historicoAulas:', historicoAulas);
+                  console.log('📅 Aulas agendadas:', historicoAulas.filter(aula => aula.status === 'agendada'));
+                  console.log('⏰ Aulas futuras:', historicoAulas.filter(aula => aula.status === 'agendada' && aula.data > new Date()));
+                  
+                  const proximaAula = historicoAulas
+                    .filter(aula => {
+                      const agora = new Date();
+                      const dataAula = new Date(aula.data);
+                      
+                      // Aula é futura se a data/hora for maior que agora
+                      const isFutura = dataAula > agora;
+                      console.log(`📅 Aula ${aula.horario} em ${formatarData(aula.data)} às ${aula.horario}: ${isFutura ? 'FUTURA' : 'PASSADA'}`);
+                      console.log(`📅 Data da aula: ${dataAula.toLocaleString()}`);
+                      console.log(`📅 Agora: ${agora.toLocaleString()}`);
+                      
+                      return aula.status === 'agendada' && isFutura;
+                    })
+                    .sort((a, b) => new Date(a.data) - new Date(b.data))[0];
+
+                  console.log('🎯 Próxima aula encontrada:', proximaAula);
+
+                  if (!proximaAula) {
+                    console.log('❌ Nenhuma próxima aula encontrada');
+                    return (
+                      <View className="bg-gray-50 rounded-xl p-8 items-center">
+                        <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
+                        <Text className="text-gray-500 font-pregular text-lg text-center mt-4">
+                          Nenhuma aula agendada
+                        </Text>
+                        <Text className="text-gray-400 font-pregular text-sm text-center mt-2">
+                          Agende sua próxima aula na aba "Agendar"
+                        </Text>
+                      </View>
+                    );
+                  }
+
+                  // Calcular tempo restante até a aula (simplificado)
+                  const agora = new Date();
+                  const hoje = new Date();
+                  hoje.setHours(0, 0, 0, 0);
+                  
+                  const dataAula = new Date(proximaAula.data);
+                  dataAula.setHours(0, 0, 0, 0);
+                  
+                  const diffTime = dataAula.getTime() - hoje.getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  let tempoTexto = '';
+                  if (diffDays === 0) {
+                    tempoTexto = 'Hoje';
+                  } else if (diffDays === 1) {
+                    tempoTexto = 'Amanhã';
+                  } else if (diffDays > 1) {
+                    tempoTexto = `Em ${diffDays} dias`;
+                  } else {
+                    tempoTexto = 'Hoje';
+                  }
+                  
+                  console.log('📅 Cálculo simplificado:');
+                  console.log('📅 Hoje:', hoje.toLocaleDateString());
+                  console.log('📅 Data da aula:', dataAula.toLocaleDateString());
+                  console.log('📅 Diferença em dias:', diffDays);
+                  console.log('🎯 Resultado:', tempoTexto);
+
+                  return (
+                    <View className="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-400">
+                      <View className="flex-row items-center justify-between mb-4">
                         <View className="flex-row items-center">
-                          <Ionicons 
-                            name={getStatusIcon(aula.status)} 
-                            size={20} 
-                            color={getStatusColor(aula.status)} 
-                          />
-                          <Text className={`ml-2 font-pbold text-sm ${
-                            aula.status === 'realizada' ? 'text-green-600' : 'text-yellow-600'
-                          }`}>
-                            {aula.status === 'realizada' ? 'Realizada' : 'Agendada'}
+                          <Ionicons name="time" size={24} color="#1E40AF" />
+                          <Text className="text-blue-800 font-pextrabold text-xl ml-2">
+                            {proximaAula.horario}
                           </Text>
                         </View>
-                        <Text className="text-gray-500 font-pregular text-sm">
-                          {aula.horario}
-                        </Text>
+                        <View className="bg-blue-100 rounded-full px-3 py-1">
+                          <Text className="text-blue-800 font-pbold text-sm">
+                            Em {tempoTexto}
+                          </Text>
+                        </View>
                       </View>
 
-                      <View className="space-y-2">
-                        <Text className="text-gray-800 font-pbold text-lg">
-                          {formatarDiaSemana(aula.data)}
-                        </Text>
-                        <Text className="text-gray-600 font-pregular text-sm">
-                          {formatarData(aula.data)}
-                        </Text>
+                      <View className="space-y-3">
+                        <View className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                          <Text className="text-blue-800 font-pbold text-lg">
+                            {formatarDiaSemana(proximaAula.data)}
+                          </Text>
+                          <Text className="text-blue-700 font-pregular text-sm">
+                            {formatarData(proximaAula.data)}
+                          </Text>
+                        </View>
+
+                        <View className="flex-row items-center justify-between">
+                          <View className="flex-row items-center">
+                            <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                            <Text className="text-green-700 font-pbold text-sm ml-2">
+                              Confirmado
+                            </Text>
+                          </View>
+                          <View className="bg-green-500 rounded-full px-3 py-1">
+                            <Text className="text-white font-pbold text-xs">
+                              Próxima Aula
+                            </Text>
+                          </View>
+                        </View>
                       </View>
                     </View>
-                  ))}
+                  );
+                }
 
-                  
-                  {/* Botão Carregar Mais - sempre mostrar se podeCarregarMais for true */}
-                  {podeCarregarMais && (
-                    <TouchableOpacity
-                      onPress={carregarMaisHistorico}
-                      style={{
-                        backgroundColor: '#3B82F6',
-                        borderRadius: 12,
-                        padding: 16,
-                        borderWidth: 2,
-                        borderColor: '#60A5FA',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 8,
-                        elevation: 8,
-                        alignItems: 'center'
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Ionicons name="chevron-down" size={20} color="white" />
-                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16, marginLeft: 8 }}>
-                          Carregar mais 3 aulas
+                if (tabAtiva === 'agendadas') {
+                  // Mostrar lista de aulas agendadas
+                  const aulasAgendadas = historicoAulas
+                    .filter(aula => aula.status === 'agendada' && aula.data > new Date())
+                    .sort((a, b) => a.data - b.data);
+
+                  if (aulasAgendadas.length === 0) {
+                    return (
+                      <View className="bg-gray-50 rounded-xl p-8 items-center">
+                        <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
+                        <Text className="text-gray-500 font-pregular text-lg text-center mt-4">
+                          Nenhuma aula agendada
+                        </Text>
+                        <Text className="text-gray-400 font-pregular text-sm text-center mt-2">
+                          Agende suas aulas na aba "Agendar"
                         </Text>
                       </View>
-                      <Text style={{ color: '#DBEAFE', fontWeight: '400', fontSize: 14, marginTop: 4 }}>
-                        Mostrando {historicoLimitado.length} de {historicoAulas.filter(aula => aula.status === 'realizada').length} aulas
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                    );
+                  }
 
-                  {/* Mensagem de conclusão - mostrar se não pode carregar mais */}
-                  {!podeCarregarMais && historicoAulas.filter(aula => aula.status === 'realizada').length > 3 && (
-                    <View style={{
-                      backgroundColor: '#F0FDF4',
-                      borderRadius: 12,
-                      padding: 16,
-                      borderWidth: 2,
-                      borderColor: '#BBF7D0',
-                      alignItems: 'center'
-                    }}>
-                      <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                      <Text style={{ color: '#166534', fontWeight: '700', fontSize: 14, marginTop: 8, textAlign: 'center' }}>
-                        Todas as {historicoAulas.filter(aula => aula.status === 'realizada').length} aulas foram carregadas
-                      </Text>
+                  const aulasVisiveis = aulasAgendadas.slice(0, aulasAgendadasLimit);
+                  const podeCarregarMais = aulasAgendadasLimit < aulasAgendadas.length;
+
+                  return (
+                    <View className="space-y-3">
+                      {aulasVisiveis.map((aula) => (
+                        <View key={aula.id} className="bg-white rounded-xl p-4 shadow-lg border-2 border-blue-500">
+                          <View className="flex-row items-center justify-between mb-3">
+                            <View className="flex-row items-center">
+                              <Ionicons name="time" size={20} color="#3B82F6" />
+                              <Text className="text-blue-600 font-pbold text-sm ml-2">
+                                Agendada
+                              </Text>
+                            </View>
+                            <Text className="text-gray-500 font-pregular text-sm">
+                              {aula.horario}
+                            </Text>
+                          </View>
+
+                          <View className="space-y-2">
+                            <Text className="text-gray-800 font-pbold text-lg">
+                              {formatarDiaSemana(aula.data)}
+                            </Text>
+                            <Text className="text-gray-600 font-pregular text-sm">
+                              {formatarData(aula.data)}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+
+                      {/* Controles de paginação */}
+                      <View className="flex-row space-x-3 mt-4">
+                        {podeCarregarMais && (
+                          <TouchableOpacity
+                            onPress={carregarMaisAulasAgendadas}
+                            className="flex-1 bg-blue-500 rounded-lg py-3 px-4"
+                            activeOpacity={0.8}
+                          >
+                            <Text className="text-white font-pbold text-center">
+                              Carregar Mais ({aulasAgendadas.length - aulasVisiveis.length} restantes)
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        
+                        {aulasVisiveis.length > 3 && (
+                          <TouchableOpacity
+                            onPress={fecharAulasAgendadas}
+                            className="bg-gray-500 rounded-lg py-3 px-4"
+                            activeOpacity={0.8}
+                          >
+                            <Text className="text-white font-pbold text-center">
+                              Fechar
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
-                  )}
+                  );
+                }
 
-                  {/* Botão "Ver Menos" - sempre mostrar quando há mais de 3 aulas visíveis */}
-                  {historicoVisivel > 3 && (
-                    <TouchableOpacity
-                      onPress={resetarPaginação}
-                      style={{
-                        backgroundColor: 'transparent',
-                        borderRadius: 8,
-                        padding: 8,
-                        borderWidth: 1,
-                        borderColor: '#9CA3AF',
-                        alignItems: 'center',
-                        marginTop: 8
-                      }}
-                    >
-                      <Text style={{ color: '#6B7280', fontWeight: '500', fontSize: 12 }}>
-                        Ver menos aulas
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+                if (tabAtiva === 'realizadas') {
+                  // Mostrar histórico de aulas realizadas
+                  const aulasRealizadas = historicoAulas
+                    .filter(aula => aula.status === 'realizada')
+                    .sort((a, b) => b.data - a.data);
+
+                  if (aulasRealizadas.length === 0) {
+                    return (
+                      <View className="bg-gray-50 rounded-xl p-8 items-center">
+                        <Ionicons name="checkmark-circle-outline" size={64} color="#9CA3AF" />
+                        <Text className="text-gray-500 font-pregular text-lg text-center mt-4">
+                          Nenhuma aula realizada ainda
+                        </Text>
+                        <Text className="text-gray-400 font-pregular text-sm text-center mt-2">
+                          Suas aulas aparecerão aqui após serem realizadas
+                        </Text>
+                      </View>
+                    );
+                  }
+
+                  const aulasVisiveis = aulasRealizadas.slice(0, aulasRealizadasLimit);
+                  const podeCarregarMais = aulasRealizadasLimit < aulasRealizadas.length;
+
+                  return (
+                    <View className="space-y-3">
+                      {aulasVisiveis.map((aula) => (
+                        <View key={aula.id} className="bg-white rounded-xl p-4 shadow-lg border-2 border-green-500">
+                          <View className="flex-row items-center justify-between mb-3">
+                            <View className="flex-row items-center">
+                              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                              <Text className="text-green-600 font-pbold text-sm ml-2">
+                                Realizada
+                              </Text>
+                            </View>
+                            <Text className="text-gray-500 font-pregular text-sm">
+                              {aula.horario}
+                            </Text>
+                          </View>
+
+                          <View className="space-y-2">
+                            <Text className="text-gray-800 font-pbold text-lg">
+                              {formatarDiaSemana(aula.data)}
+                            </Text>
+                            <Text className="text-gray-600 font-pregular text-sm">
+                              {formatarData(aula.data)}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+
+                      {/* Controles de paginação */}
+                      <View className="flex-row space-x-3 mt-4">
+                        {podeCarregarMais && (
+                          <TouchableOpacity
+                            onPress={carregarMaisAulasRealizadas}
+                            className="flex-1 bg-green-500 rounded-lg py-3 px-4"
+                            activeOpacity={0.8}
+                          >
+                            <Text className="text-white font-pbold text-center">
+                              Carregar Mais ({aulasRealizadas.length - aulasVisiveis.length} restantes)
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        
+                        {aulasVisiveis.length > 3 && (
+                          <TouchableOpacity
+                            onPress={fecharAulasRealizadas}
+                            className="bg-gray-500 rounded-lg py-3 px-4"
+                            activeOpacity={0.8}
+                          >
+                            <Text className="text-white font-pbold text-center">
+                              Fechar
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  );
+                }
+
+                return null;
+              })()}
             </View>
           )}
 
