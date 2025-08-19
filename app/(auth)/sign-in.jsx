@@ -121,13 +121,13 @@ export default function SignIn() {
                 Não tem uma conta?{' '}
               </Text>
                              <TouchableOpacity 
-                 onPress={() => router.push('/(auth)/sign-up')}
-                 className="bg-yellow-400 border-4 border-yellow-600 rounded-lg px-2 py-1"
-               >
-                 <Text className="text-black font-pextrabold text-lg" style={{ fontWeight: '900' }}>
-                   Criar conta
-                 </Text>
-               </TouchableOpacity>
+                onPress={() => router.push('/(auth)/sign-up')}
+                className="bg-yellow-500 border-2 border-yellow-600 rounded-lg px-2 py-1"
+              >
+                <Text className="text-black font-pextrabold text-sm" style={{ fontWeight: '900' }}>
+                  Criar conta
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>

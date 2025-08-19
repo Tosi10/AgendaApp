@@ -1,6 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, deleteDoc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -10,46 +8,18 @@ import { HORARIOS_DISPONIVEIS, HORARIOS_PERSONAL_TRAINING } from '../../constant
 import { REGRAS_REPOSICAO } from '../../constants/Planos';
 import { useGlobal } from '../../context/GlobalProvider';
 import { db } from '../../lib/firebase';
+import { getDataAtualBrasil, getHoraBrasil, isHorarioPassado } from '../../lib/horaBrasil';
 
 export default function Agendar() {
   const { user, userProfile, updateCurrentUserM2Coins } = useGlobal();
-  const params = useLocalSearchParams?.() || {};
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(new Date()); // Inicializar com o dia atual
   const [agendamentos, setAgendamentos] = useState({});
   const [loading, setLoading] = useState(true);
   const [apelidosUsuarios, setApelidosUsuarios] = useState({}); // Estado para armazenar apelidos
 
   // Estado para seleção de calendário (apenas para admins)
   const [calendarioSelecionado, setCalendarioSelecionado] = useState('alunos');
-  // Aplicar data dos parâmetros ao focar e limpar ao sair
-  useFocusEffect(
-    React.useCallback(() => {
-      const { dataSelecionada, dateMs } = params || {};
-
-      let data = null;
-      if (dateMs) {
-        const ms = Number(dateMs);
-        if (!Number.isNaN(ms)) data = new Date(ms);
-      }
-      if (!data && dataSelecionada) {
-        data = new Date(String(dataSelecionada));
-      }
-      if (data && !Number.isNaN(data.getTime())) {
-        data.setHours(12, 0, 0, 0);
-        // Só atualiza se for diferente do dia atual selecionado
-        if (!selectedDay || selectedDay.toDateString() !== data.toDateString()) {
-          setCurrentWeek(data);
-          setSelectedDay(data);
-        }
-      }
-
-      // Ao desfocar, limpar seleção para evitar reuso na próxima abertura
-      return () => {
-        setSelectedDay(null);
-      };
-    }, [params?.dataSelecionada, params?.dateMs])
-  );
 
   // Verificar se o usuário pode agendar
   const canSchedule = userProfile && userProfile.aprovado;
@@ -75,20 +45,15 @@ export default function Agendar() {
           }
         });
         
-        console.log('📊 Agendamentos carregados:', agendamentosData);
         setAgendamentos(agendamentosData);
         
         // Buscar apelidos de todos os usuários únicos
         const todosEmails = [...new Set(Object.values(agendamentosData).flat())];
-        console.log('📧 Emails únicos encontrados:', todosEmails);
         
         if (todosEmails.length > 0) {
-          console.log('🔍 Iniciando busca de apelidos...');
           const apelidos = await buscarApelidos(todosEmails);
-          console.log('💾 Salvando apelidos no estado:', apelidos);
           setApelidosUsuarios(apelidos);
         } else {
-          console.log('⚠️ Nenhum email para buscar apelidos');
           setApelidosUsuarios({});
         }
         
@@ -106,10 +71,7 @@ export default function Agendar() {
   // Função para buscar apelidos de usuários
   const buscarApelidos = async (emails) => {
     try {
-      console.log('🔍 Buscando apelidos para emails:', emails);
-      
       if (!emails || emails.length === 0) {
-        console.log('⚠️ Nenhum email para buscar');
         return {};
       }
       
@@ -117,10 +79,8 @@ export default function Agendar() {
       
       // Buscar todos os usuários de uma vez
       const usuariosQuery = query(collection(db, 'usuarios'), where('email', 'in', emails));
-      console.log('🔍 Executando query para buscar usuários...');
       
       const usuariosSnapshot = await getDocs(usuariosQuery);
-      console.log('✅ Usuários encontrados:', usuariosSnapshot.size);
       
       usuariosSnapshot.forEach((doc) => {
         const userData = doc.data();
@@ -128,10 +88,8 @@ export default function Agendar() {
         const apelido = userData.apelido || userData.email.split('@')[0];
         
         apelidos[email] = apelido;
-        console.log(`👤 ${email} → ${apelido}`);
       });
       
-      console.log('🎯 Apelidos encontrados:', apelidos);
       return apelidos;
       
     } catch (error) {
@@ -143,7 +101,6 @@ export default function Agendar() {
         apelidos[email] = email.split('@')[0];
       });
       
-      console.log('🔄 Usando fallback (prefixos):', apelidos);
       return apelidos;
     }
   };
@@ -215,31 +172,26 @@ export default function Agendar() {
     return date.toDateString() === today.toDateString();
   };
 
-  // Verificar se o cancelamento é permitido (1 hora antes da aula)
+  // Verificar se o cancelamento é permitido (1 hora antes da aula) usando hora correta do Brasil
   const canCancelClass = (date, horario) => {
-    const now = new Date();
     const [hours, minutes] = horario.split(':');
     const classTime = new Date(date);
     classTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
     
     // Se a aula já passou, não pode cancelar
-    if (classTime <= now) {
+    if (isHorarioPassado(date, horario)) {
       return false;
     }
     
     // Verificar se faltam pelo menos 1 hora
     const oneHourBefore = new Date(classTime.getTime() - (60 * 60 * 1000));
-    return now <= oneHourBefore;
+    const agoraBrasil = getDataAtualBrasil();
+    return agoraBrasil <= oneHourBefore;
   };
 
-  // Verificar se a aula já passou
+  // Verificar se a aula já passou usando hora correta do Brasil
   const isClassPassed = (date, horario) => {
-    const now = new Date();
-    const [hours, minutes] = horario.split(':');
-    const classTime = new Date(date);
-    classTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
-    return classTime <= now;
+    return isHorarioPassado(date, horario);
   };
 
   // Verificar se é o dia selecionado
@@ -247,80 +199,43 @@ export default function Agendar() {
     return selectedDay && date.toDateString() === selectedDay.toDateString();
   };
 
+
+
+  // Função auxiliar para mapear dia da semana para chave
+  const getDayKey = (date) => {
+    const dayOfWeek = date.getDay(); // 0 = domingo, 1 = segunda, etc.
+    
+    switch (dayOfWeek) {
+      case 1: return 'segunda';
+      case 2: return 'terca';
+      case 3: return 'quarta';
+      case 4: return 'quinta';
+      case 5: return 'sexta';
+      default: return null; // Fim de semana
+    }
+  };
+  
   // Obter horários baseado no tipo de usuário e dia selecionado
   const getHorariosDisponiveis = () => {
-    if (mostrarCalendarioPersonal) {
-      // Para Personal Training, usar horários baseados no dia da semana
-      if (!selectedDay) return [];
-      
-      // Mapear o dia da semana para a chave correta
-      const dayOfWeek = selectedDay.getDay(); // 0 = domingo, 1 = segunda, etc.
-      
-      let dayKey;
-      switch (dayOfWeek) {
-        case 1: // Segunda-feira
-          dayKey = 'segunda';
-          break;
-        case 2: // Terça-feira
-          dayKey = 'terca';
-          break;
-        case 3: // Quarta-feira
-          dayKey = 'quarta';
-          break;
-        case 4: // Quinta-feira
-          dayKey = 'quinta';
-          break;
-        case 5: // Sexta-feira
-          dayKey = 'sexta';
-          break;
-        default:
-          return []; // Fim de semana não tem aulas
-      }
-      
-      console.log('Dia selecionado (Personal):', selectedDay.toDateString());
-      console.log('Dia da semana (Personal):', dayOfWeek, 'Chave:', dayKey);
-      console.log('Horários disponíveis (Personal):', HORARIOS_PERSONAL_TRAINING[dayKey]);
-      
-      if (HORARIOS_PERSONAL_TRAINING[dayKey]) {
-        return HORARIOS_PERSONAL_TRAINING[dayKey].map(h => h.hora);
-      }
-      
-      return [];
-    }
-    
-    // Para alunos normais, usar horários baseados no dia da semana
     if (!selectedDay) return [];
     
-    // Mapear o dia da semana para a chave correta
-    const dayOfWeek = selectedDay.getDay(); // 0 = domingo, 1 = segunda, etc.
+    const dayKey = getDayKey(selectedDay);
+    if (!dayKey) return []; // Fim de semana
     
-    let dayKey;
-    switch (dayOfWeek) {
-      case 1: // Segunda-feira
-        dayKey = 'segunda';
-        break;
-      case 2: // Terça-feira
-        dayKey = 'terca';
-        break;
-      case 3: // Quarta-feira
-        dayKey = 'quarta';
-        break;
-      case 4: // Quinta-feira
-        dayKey = 'quinta';
-        break;
-      case 5: // Sexta-feira
-        dayKey = 'sexta';
-        break;
-      default:
-        return []; // Fim de semana não tem aulas
+    // Log para mostrar que está usando a hora correta do Brasil
+    const horaBrasil = getHoraBrasil();
+    console.log('🇧🇷 Hora atual Brasil:', `${horaBrasil.hora}:${horaBrasil.minuto}`);
+    
+    let horarios;
+    if (mostrarCalendarioPersonal) {
+      horarios = HORARIOS_PERSONAL_TRAINING[dayKey];
+    } else {
+      horarios = HORARIOS_DISPONIVEIS[dayKey];
     }
     
-    console.log('Dia selecionado (Alunos):', selectedDay.toDateString());
-    console.log('Dia da semana (Alunos):', dayOfWeek, 'Chave:', dayKey);
-    console.log('Horários disponíveis (Alunos):', HORARIOS_DISPONIVEIS[dayKey]);
-    
-    if (HORARIOS_DISPONIVEIS[dayKey]) {
-      return HORARIOS_DISPONIVEIS[dayKey].map(h => h.hora);
+    if (horarios) {
+      const horariosFormatados = horarios.map(h => h.hora);
+      return horariosFormatados;
     }
     
     return [];
@@ -383,14 +298,7 @@ export default function Agendar() {
     const userEmail = user?.email;
     const userIndex = novosAgendamentos[key].indexOf(userEmail);
     
-    // DEBUG: Verificar valores
-    console.log('🔍 DEBUG toggleAgendamento:', {
-      userEmail,
-      userIndex,
-      tipoUsuario: userProfile?.tipoUsuario,
-      m2Coins: userProfile?.m2Coins,
-      userProfile: userProfile
-    });
+
     
     if (userIndex === -1) {
       // Adicionar usuário - VERIFICAR SE TEM COINS SUFICIENTES (para alunos e personal)
@@ -409,30 +317,21 @@ export default function Agendar() {
         return;
       }
       
-      // DEDUZIR 1 M2 COIN (para alunos e personal)
-      console.log('🔍 DEBUG: Verificando tipo de usuário para dedução:', userProfile?.tipoUsuario);
-      
-      if (userProfile?.tipoUsuario === 'aluno' || userProfile?.tipoUsuario === 'personal') {
-        const tipoUsuario = userProfile?.tipoUsuario === 'aluno' ? 'ALUNO' : 'PERSONAL';
-        console.log(`🔍 DEBUG: Usuário é ${tipoUsuario}, deduzindo coins...`);
-        console.log('🔍 DEBUG: Coins antes:', userProfile.m2Coins);
-        console.log('🔍 DEBUG: Coins após dedução:', userProfile.m2Coins - 1);
-        
-        try {
-          await updateCurrentUserM2Coins(userProfile.m2Coins - 1);
-          console.log('🔍 DEBUG: Coins deduzidos com sucesso!');
+              // DEDUZIR 1 M2 COIN (para alunos e personal)
+        if (userProfile?.tipoUsuario === 'aluno' || userProfile?.tipoUsuario === 'personal') {
+          try {
+            await updateCurrentUserM2Coins(userProfile.m2Coins - 1);
           
           const mensagem = mostrarCalendarioPersonal 
             ? 'Você foi agendado para Personal Training! 1 M2 Coin foi deduzido.'
             : 'Você foi agendado para esta aula! 1 M2 Coin foi deduzido.';
           Alert.alert('Sucesso', mensagem);
         } catch (error) {
-          console.error('🔍 DEBUG: Erro ao deduzir coins:', error);
+          console.error('❌ Erro ao deduzir M2 Coins:', error);
           Alert.alert('Erro', 'Não foi possível deduzir os M2 Coins. Tente novamente.');
           return;
         }
       } else {
-        console.log('🔍 DEBUG: Usuário NÃO é aluno nem personal, tipo:', userProfile?.tipoUsuario);
         // Para admins - mensagem sem moedas
         const mensagem = mostrarCalendarioPersonal 
           ? 'Você foi agendado para Personal Training!'
@@ -446,32 +345,23 @@ export default function Agendar() {
       await salvarAgendamento(key, novosAgendamentos[key]);
       
     } else {
-      // Remover usuário - DEVOLVER 1 M2 COIN (para alunos e personal)
-      console.log('🔍 DEBUG: Cancelando agendamento, verificando tipo de usuário:', userProfile?.tipoUsuario);
-      
-      if (userProfile?.tipoUsuario === 'aluno' || userProfile?.tipoUsuario === 'personal') {
-        const tipoUsuario = userProfile?.tipoUsuario === 'aluno' ? 'ALUNO' : 'PERSONAL';
-        console.log(`🔍 DEBUG: Usuário é ${tipoUsuario}, devolvendo coins...`);
-        console.log('🔍 DEBUG: Coins antes:', userProfile.m2Coins);
-        console.log('🔍 DEBUG: Coins após devolução:', userProfile.m2Coins + 1);
-        
-        try {
-          // IMPORTANTE: Atualizar o estado local ANTES de salvar no Firestore
-          const novosCoins = userProfile.m2Coins + 1;
-          await updateCurrentUserM2Coins(novosCoins);
-          console.log('🔍 DEBUG: Coins devolvidos com sucesso!');
+              // Remover usuário - DEVOLVER 1 M2 COIN (para alunos e personal)
+        if (userProfile?.tipoUsuario === 'aluno' || userProfile?.tipoUsuario === 'personal') {
+          try {
+            // IMPORTANTE: Atualizar o estado local ANTES de salvar no Firestore
+            const novosCoins = userProfile.m2Coins + 1;
+            await updateCurrentUserM2Coins(novosCoins);
           
           // Atualizar o estado local para refletir a mudança imediatamente
           userProfile.m2Coins = novosCoins;
           
           Alert.alert('Cancelado', 'Seu agendamento foi cancelado. 1 M2 Coin foi devolvido.');
         } catch (error) {
-          console.error('🔍 DEBUG: Erro ao devolver coins:', error);
+          console.error('❌ Erro ao devolver M2 Coins:', error);
           Alert.alert('Erro', 'Não foi possível devolver os M2 Coins. Tente novamente.');
           return;
         }
       } else {
-        console.log('🔍 DEBUG: Usuário NÃO é aluno nem personal, tipo:', userProfile?.tipoUsuario);
         // Para admins - mensagem sem moedas
         Alert.alert('Cancelado', 'Seu agendamento foi cancelado.');
       }
@@ -483,7 +373,7 @@ export default function Agendar() {
       await salvarAgendamento(key, novosAgendamentos[key]);
     }
     
-    setAgendamentos(novosAgendamentos);
+         setAgendamentos(novosAgendamentos);
   };
 
   if (!canSchedule) {
@@ -790,11 +680,9 @@ export default function Agendar() {
                                         {(() => {
                                           if (aluno === user?.email) {
                                             const apelido = userProfile?.apelido || user?.displayName || 'Você';
-                                            console.log(`🏃‍♂️ Personal - Usuário atual (${aluno}): ${apelido}`);
                                             return apelido;
                                           } else {
                                             const apelido = apelidosUsuarios[aluno] || aluno.split('@')[0];
-                                            console.log(`🏃‍♂️ Personal - Outro usuário (${aluno}): ${apelido} (do estado: ${apelidosUsuarios[aluno]})`);
                                             return apelido;
                                           }
                                         })()}
@@ -958,11 +846,9 @@ export default function Agendar() {
                                   {(() => {
                                     if (aluno === user?.email) {
                                       const apelido = userProfile?.apelido || user?.displayName || user?.email?.split('@')[0] || 'Você';
-                                      console.log(`👤 Usuário atual (${aluno}): ${apelido}`);
                                       return apelido;
                                     } else {
                                       const apelido = apelidosUsuarios[aluno] || aluno.split('@')[0];
-                                      console.log(`👤 Outro usuário (${aluno}): ${apelido} (do estado: ${apelidosUsuarios[aluno]})`);
                                       return apelido;
                                     }
                                   })()}

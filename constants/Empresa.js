@@ -6,7 +6,34 @@ export const INFO_EMPRESA = {
   telefone: '(XX) XXXX-XXXX',
   email: 'contato@m2academia.com',
   instagram: '@m2academia',
-  whatsapp: '(XX) XXXXX-XXXX'
+  whatsapp: '+5541996433853',
+  planos: [
+    {
+      nome: 'Quem corre é a bola⚽️',
+      descricao: 'Plano básico para iniciantes',
+      frequencia: '1x na semana'
+    },
+    {
+      nome: 'Toca e passa⚽️',
+      descricao: 'Plano intermediário',
+      frequencia: '2x na semana'
+    },
+    {
+      nome: 'Jogou onde fera⚽️',
+      descricao: 'Plano avançado',
+      frequencia: '3x na semana'
+    },
+    {
+      nome: 'Segura Juvenil⚽️',
+      descricao: 'Plano profissional',
+      frequencia: '4x na semana'
+    },
+    {
+      nome: 'Respeita a minha História⚽️',
+      descricao: 'Plano elite',
+      frequencia: '5x na semana'
+    }
+  ]
 };
 
 export const POLITICAS_AGENDAMENTO = {

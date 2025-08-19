@@ -50,6 +50,11 @@ export default function Chat() {
         });
         setMessages(messagesData);
         setLoading(false);
+        
+        // Scroll para o final para mostrar mensagens mais recentes
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       },
       (error) => {
         console.error('Erro ao carregar mensagens:', error);
@@ -76,7 +81,7 @@ export default function Chat() {
 
       setNewMessage('');
       
-      // Scroll para baixo
+      // Scroll para o final (mensagens mais recentes estão embaixo agora)
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);

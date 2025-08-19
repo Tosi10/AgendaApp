@@ -4,6 +4,7 @@ import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where 
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from '../../lib/firebase';
+import { getHorasFaltando } from '../../lib/horaBrasil';
 
 import LoadingScreen from '../../components/LoadingScreen';
 import { INFO_EMPRESA } from '../../constants/Empresa';
@@ -643,33 +644,8 @@ export default function Perfil() {
                     );
                   }
 
-                  // Calcular tempo restante até a aula (simplificado)
-                  const agora = new Date();
-                  const hoje = new Date();
-                  hoje.setHours(0, 0, 0, 0);
-                  
-                  const dataAula = new Date(proximaAula.data);
-                  dataAula.setHours(0, 0, 0, 0);
-                  
-                  const diffTime = dataAula.getTime() - hoje.getTime();
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                  
-                  let tempoTexto = '';
-                  if (diffDays === 0) {
-                    tempoTexto = 'Hoje';
-                  } else if (diffDays === 1) {
-                    tempoTexto = 'Amanhã';
-                  } else if (diffDays > 1) {
-                    tempoTexto = `Em ${diffDays} dias`;
-                  } else {
-                    tempoTexto = 'Hoje';
-                  }
-                  
-                  console.log('📅 Cálculo simplificado:');
-                  console.log('📅 Hoje:', hoje.toLocaleDateString());
-                  console.log('📅 Data da aula:', dataAula.toLocaleDateString());
-                  console.log('📅 Diferença em dias:', diffDays);
-                  console.log('🎯 Resultado:', tempoTexto);
+                  // Calcular tempo restante até a aula usando hora correta do Brasil
+                  const tempoTexto = getHorasFaltando(proximaAula.data, proximaAula.horario);
 
                   return (
                     <View className="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-400">
@@ -682,7 +658,7 @@ export default function Perfil() {
                         </View>
                         <View className="bg-blue-100 rounded-full px-3 py-1">
                           <Text className="text-blue-800 font-pbold text-sm">
-                            Em {tempoTexto}
+                            {tempoTexto}
                           </Text>
                         </View>
                       </View>

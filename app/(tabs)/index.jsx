@@ -1,60 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { INFO_EMPRESA } from '../../constants/Empresa';
 import { useGlobal } from '../../context/GlobalProvider';
 
 export default function Home() {
   const { user, userProfile } = useGlobal();
 
-  // Função para navegar para agendar com dia específico
-  const navegarParaAgendar = (diaSemana) => {
-    // Mapear o nome do dia para o número do dia da semana
-    const mapeamentoDias = {
-      'Segunda': 1,
-      'Terça': 2,
-      'Quarta': 3,
-      'Quinta': 4,
-      'Sexta': 5
-    };
+  // Função para abrir WhatsApp com mensagem personalizada
+  const abrirWhatsApp = (plano) => {
+    const numeroWhatsApp = INFO_EMPRESA.whatsapp.replace(/\D/g, ''); // Remove caracteres não numéricos
+    const mensagem = `Olá! 👋 Gostaria de saber mais sobre o plano "${plano.nome}" da M2 Academia de Futebol! ⚽️`;
     
-    const numeroDia = mapeamentoDias[diaSemana];
-    if (numeroDia === undefined) return;
+    const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
     
-    // Calcular a data do próximo dia da semana
-    const hoje = new Date();
-    const diaAtual = hoje.getDay(); // 0 = domingo, 1 = segunda, etc.
-    
-    let diasParaAdicionar = numeroDia - diaAtual;
-    
-    // Se o dia já passou nesta semana, ir para a próxima semana
-    if (diasParaAdicionar < 0) {
-      diasParaAdicionar += 7;
-    }
-    
-    // Calcular a data alvo
-    const dataAlvo = new Date(hoje);
-    dataAlvo.setDate(hoje.getDate() + diasParaAdicionar);
-    // Normalizar hora para meio-dia local para evitar virada de dia por timezone
-    dataAlvo.setHours(12, 0, 0, 0);
-    
-    // Formatar a data para exibição
-    const dataFormatada = dataAlvo.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long'
-    });
-    
-    console.log(`🎯 Navegando para ${diaSemana}-feira: ${dataFormatada}`);
-    
-    // Navegar para agendar com a data selecionada
-    router.push({
-      pathname: '/(tabs)/agendar',
-      params: { 
-        dataSelecionada: dataAlvo.toISOString(),
-        diaSemana: diaSemana,
-        dateMs: String(dataAlvo.getTime())
-      }
+    Linking.openURL(url).catch((err) => {
+      console.error('Erro ao abrir WhatsApp:', err);
+      // Fallback: tentar abrir WhatsApp de outra forma
+      Linking.openURL(`whatsapp://send?phone=${numeroWhatsApp}&text=${encodeURIComponent(mensagem)}`);
     });
   };
 
@@ -135,60 +97,13 @@ export default function Home() {
     }
   ];
 
-  // Horários da semana com cores diferentes
-  const horarios = [
-    { dia: 'Segunda', horarios: '6:30 / 17:30 / 18:30', cor: '#2563eb' },
-    { dia: 'Terça', horarios: '17:00 / 18:00', cor: '#059669' },
-    { dia: 'Quarta', horarios: '6:30 / 10:00 / 17:30 / 18:30', cor: '#7c3aed' },
-    { dia: 'Quinta', horarios: '17:00 / 18:00', cor: '#ea580c' },
-    { dia: 'Sexta', horarios: '6:30 / 18:00', cor: '#4338ca' }
-  ];
-
-  const renderHorario = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => navegarParaAgendar(item.dia)}
-      activeOpacity={0.8}
-      className="mx-3 min-w-[160]"
-      style={{
-        elevation: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
-      }}
-    >
-      {/* Card principal com design moderno */}
-      <View className="bg-white rounded-2xl overflow-hidden border border-gray-100">
-        {/* Header com cor sólida elegante */}
-        <View className="px-5 py-4" style={{ backgroundColor: item.cor }}>
-          <Text className="text-white font-pextrabold text-xl text-center tracking-wide">
-            {item.dia}
-          </Text>
-        </View>
-        
-        {/* Conteúdo do card */}
-        <View className="px-5 py-5 bg-white">
-          {/* Horários */}
-          <Text className="text-gray-700 font-pbold text-base text-center mb-4 leading-6">
-            {item.horarios}
-          </Text>
-          
-          {/* Botão de ação elegante */}
-          <View className="bg-blue-500 rounded-xl py-3 px-4 shadow-lg">
-            <View className="flex-row items-center justify-center">
-              <Ionicons name="calendar" size={18} color="white" />
-              <Text className="text-white font-pbold text-sm ml-2 tracking-wide">
-                AGENDAR
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   const renderPlano = ({ item }) => (
-    <View className={`rounded-2xl p-4 mx-2 min-w-[280] ${item.destaque ? 'border-4 border-yellow-400 shadow-2xl' : 'border-2 shadow-lg'}`} style={{ backgroundColor: item.cor + '60', borderColor: item.cor }}>
+    <TouchableOpacity 
+      className={`rounded-2xl p-4 mx-2 min-w-[280] ${item.destaque ? 'border-4 border-yellow-400 shadow-2xl' : 'border-2 shadow-lg'}`} 
+      style={{ backgroundColor: item.cor + '60', borderColor: item.cor }}
+      onPress={() => abrirWhatsApp(item)}
+      activeOpacity={0.8}
+    >
       {item.destaque && (
         <View className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full px-3 py-1 self-center mb-2">
           <Text className="text-white font-pextrabold text-xs text-center">
@@ -244,7 +159,7 @@ export default function Home() {
           </View>
         ))}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -296,49 +211,23 @@ export default function Home() {
             </Text>
           </View>
 
-          {/* Horários da Semana */}
-          <View className="px-6 py-8 bg-gradient-to-r from-gray-50 to-blue-50">
-            <Text className="text-gray-800 font-pextrabold text-3xl mb-6 text-center">
-              ⏰ Horários M2
-            </Text>
-            
-            {/* Mensagem explicativa */}
-            <View className="bg-blue-100 border border-blue-300 rounded-2xl p-5 mb-6">
-              <View className="flex-row items-center justify-center">
-                <View className="bg-blue-500 rounded-full p-2 mr-3">
-                  <Ionicons name="information-circle" size={20} color="white" />
-                </View>
-                <Text className="text-blue-800 font-pbold text-base text-center">
-                  💡 Toque em qualquer dia para ir direto para agendar!
-                </Text>
-              </View>
-            </View>
-            
-            <FlatList
-              data={horarios}
-              renderItem={renderHorario}
-              keyExtractor={(item) => item.dia}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 6 }}
-            />
-          </View>
-
-          {/* Planos Disponíveis */}
-          <View className="px-6 py-6 bg-gradient-to-r from-yellow-50 to-orange-50">
-            <Text className="text-gray-800 font-pextrabold text-2xl mb-4 text-center">
-              💰 Planos M2 Soccer Studio 2024
-            </Text>
-            
-            <FlatList
-              data={planos}
-              renderItem={renderPlano}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 6 }}
-            />
-          </View>
+                     {/* Seção de Planos */}
+           <View className="px-6 py-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+             <Text className="text-2xl font-pextrabold text-center mb-6 text-gray-800">
+               📋 Nossos Planos
+             </Text>
+             <Text className="text-gray-600 font-pregular text-center mb-4">
+               👆 Toque em um plano para falar conosco no WhatsApp!
+             </Text>
+             <FlatList
+               data={planos}
+               renderItem={renderPlano}
+               keyExtractor={(item) => item.id}
+               horizontal
+               showsHorizontalScrollIndicator={false}
+               contentContainerStyle={{ paddingHorizontal: 6 }}
+             />
+           </View>
 
           {/* Regras Importantes */}
           <View className="px-6 py-6 bg-yellow-50">
@@ -408,7 +297,7 @@ export default function Home() {
                 {/* PIX corrigido */}
                 <View className="bg-gradient-to-r from-green-500 to-blue-500 rounded-lg p-4 mt-4">
                   <Text className="text-white font-pextrabold text-center text-lg">
-                    �� PIX: {INFO_EMPRESA?.pix || '10356007000102'}
+                    💰 PIX: {INFO_EMPRESA?.pix || '10356007000102'}
                   </Text>
                   <Text className="text-white font-pregular text-sm text-center mt-1">
                     CNPJ da empresa

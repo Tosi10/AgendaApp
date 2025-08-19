@@ -13,12 +13,12 @@ export default function FormField({
   return (
     <View className="mb-4">
       {label && (
-        <Text className="text-black font-pbold text-lg mb-2">
+        <Text className="text-black font-pextrabold text-xl mb-2">
           {label}
         </Text>
       )}
       <TextInput
-        className="bg-white/90 border-4 border-blue-800 rounded-lg px-4 py-3 text-black font-pbold text-lg"
+        className="bg-white/90 border-4 border-blue-800 rounded-3xl px-6 py-3 text-black font-pbold text-lg"
         placeholder={placeholder}
         placeholderTextColor="#666666"
         value={value}
@@ -26,6 +26,12 @@ export default function FormField({
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
+        style={{
+          // Garantir que não haja mudança de cor quando focado
+          outlineStyle: 'none',
+          // Remover qualquer estilo de foco padrão
+          borderColor: '#1e40af', // blue-800
+        }}
       />
       {error && (
         <Text className="text-red-500 font-pregular text-sm mt-1">
