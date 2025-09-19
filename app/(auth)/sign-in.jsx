@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import { Alert, Image, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import FormField from '../../components/FormField';
 import { useGlobal } from '../../context/GlobalProvider';
@@ -62,12 +62,18 @@ export default function SignIn() {
       className="flex-1"
       resizeMode="cover"
     >
-      <View className="flex-1 bg-white/60">
-        <ScrollView 
-          className="flex-1 px-6"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAvoidingView 
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View className="flex-1 bg-white/60">
+          <ScrollView 
+            className="flex-1 px-6"
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
           {/* Logo M2 Academia */}
           <View className="items-center mb-8">
             <Image
@@ -75,12 +81,6 @@ export default function SignIn() {
               className="w-32 h-32"
               resizeMode="contain"
             />
-            <Text className="text-2xl font-bold text-gray-800 mt-2">
-              M2 Academia
-            </Text>
-            <Text className="text-sm text-gray-600">
-              Academia de Futebol
-            </Text>
           </View>
 
           {/* Título de Boas-vindas */}
@@ -145,7 +145,8 @@ export default function SignIn() {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 }

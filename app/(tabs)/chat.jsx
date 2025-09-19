@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -190,6 +191,14 @@ export default function Chat() {
           </View>
         )}
 
+        {/* Barra degradê amarela para azul */}
+        <LinearGradient
+          colors={['#FCD34D', '#3B82F6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradientBar}
+        />
+
         {/* Lista de mensagens */}
         <ScrollView 
           ref={scrollViewRef}
@@ -266,7 +275,7 @@ export default function Chat() {
         {/* Input de mensagem */}
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
           enabled={true}
           style={styles.inputContainer}
         >
@@ -480,7 +489,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
@@ -563,5 +572,9 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#6B7280',
+  },
+  gradientBar: {
+    height: 8,
+    width: '100%',
   },
 }); 

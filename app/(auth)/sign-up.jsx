@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Alert, Image, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import FormField from '../../components/FormField';
 import { useGlobal } from '../../context/GlobalProvider';
@@ -93,12 +93,18 @@ export default function SignUp() {
       className="flex-1"
       resizeMode="cover"
     >
-      <View className="flex-1 bg-white/60">
-        <ScrollView 
-          className="flex-1 px-6"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAvoidingView 
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View className="flex-1 bg-white/60">
+          <ScrollView 
+            className="flex-1 px-6"
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
           {/* Logo M2 Academia */}
           <View className="items-center mb-6">
             <Image
@@ -106,12 +112,6 @@ export default function SignUp() {
               className="w-28 h-28"
               resizeMode="contain"
             />
-            <Text className="text-xl font-bold text-gray-800 mt-2">
-              M2 Academia
-            </Text>
-            <Text className="text-sm text-gray-600">
-              Academia de Futebol
-            </Text>
           </View>
 
           {/* Título de Cadastro */}
@@ -191,7 +191,8 @@ export default function SignUp() {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 }

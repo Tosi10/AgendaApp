@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { FlatList, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { INFO_EMPRESA } from '../../constants/Empresa';
 import { useGlobal } from '../../context/GlobalProvider';
@@ -211,7 +212,15 @@ export default function Home() {
             </Text>
           </View>
 
-                     {/* Seção de Planos */}
+          {/* Barra degradê amarela para azul */}
+          <LinearGradient
+            colors={['#FCD34D', '#3B82F6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientBar}
+          />
+
+          {/* Seção de Planos */}
            <View className="px-6 py-6 bg-gradient-to-r from-blue-50 to-indigo-50">
              <Text className="text-2xl font-pextrabold text-center mb-6 text-gray-800">
                📋 Nossos Planos
@@ -228,6 +237,7 @@ export default function Home() {
                contentContainerStyle={{ paddingHorizontal: 6 }}
              />
            </View>
+
 
           {/* Regras Importantes */}
           <View className="px-6 py-6 bg-yellow-50">
@@ -368,5 +378,9 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'center',
     fontSize: 16,
+  },
+  gradientBar: {
+    height: 8,
+    width: '100%',
   },
 }); 

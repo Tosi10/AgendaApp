@@ -238,6 +238,7 @@ export function GlobalProvider({ children }) {
     try {
       const userKey = `lastChatVisit_${user.uid}`;
       const savedVisit = await AsyncStorage.getItem(userKey);
+      
       if (savedVisit) {
         const visitDate = new Date(savedVisit);
         setLastChatVisit(visitDate);
@@ -276,6 +277,7 @@ export function GlobalProvider({ children }) {
     // Marcar como visitado quando limpar
     markChatAsVisited();
   };
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

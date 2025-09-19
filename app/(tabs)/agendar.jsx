@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { addDoc, collection, deleteDoc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -549,6 +550,14 @@ export default function Agendar() {
             </View>
           </View>
 
+          {/* Barra degradê amarela para azul */}
+          <LinearGradient
+            colors={['#FCD34D', '#3B82F6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientBar}
+          />
+
           {/* Lista de horários do dia selecionado */}
           {selectedDay && (
             <View className="px-6 py-4">
@@ -686,9 +695,6 @@ export default function Agendar() {
                                             return apelido;
                                           }
                                         })()}
-                                      </Text>
-                                      <Text className="text-purple-600 font-pregular text-sm">
-                                        {aluno}
                                       </Text>
                                     </View>
                                     <View className="flex-row items-center space-x-2">
@@ -1020,6 +1026,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '800',
     fontSize: 36,
+  },
+  gradientBar: {
+    height: 8,
+    width: '100%',
   },
   // ... rest of existing styles ...
 }); 

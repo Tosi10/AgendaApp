@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -511,6 +512,14 @@ export default function Perfil() {
             </Text>
           </View>
 
+          {/* Barra degradê amarela para azul */}
+          <LinearGradient
+            colors={['#FCD34D', '#3B82F6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientBar}
+          />
+
           {/* Header com M2 Coins */}
           <View style={styles.coinHeader}>
             <Image
@@ -529,14 +538,14 @@ export default function Perfil() {
                 {/* Aulas Agendadas */}
                 <TouchableOpacity 
                   onPress={() => setTabAtiva('agendadas')}
-                  className={`flex-1 bg-blue-200 rounded-xl p-4 border-4 ${
+                  className={`flex-1 bg-blue-200 rounded-xl p-3 border-4 ${
                     tabAtiva === 'agendadas' ? 'border-blue-500 bg-blue-200' : 'border-blue-600'
                   }`}
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center">
                       <Ionicons name="calendar" size={20} color="#1E40AF" />
-                      <Text className="text-blue-800 font-pbold text-sm ml-2">
+                      <Text className="text-blue-800 font-pbold text-xs ml-2">
                         Aulas Agendadas
                       </Text>
                     </View>
@@ -551,14 +560,14 @@ export default function Perfil() {
                 {/* Aulas Realizadas */}
                 <TouchableOpacity 
                   onPress={() => setTabAtiva('realizadas')}
-                  className={`flex-1 bg-green-200 rounded-xl p-4 border-4 ${
+                  className={`flex-1 bg-green-200 rounded-xl p-3 border-4 ${
                     tabAtiva === 'realizadas' ? 'border-green-500 bg-green-200' : 'border-green-600'
                   }`}
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center">
                       <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-                      <Text className="text-green-800 font-pbold text-sm ml-2">
+                      <Text className="text-green-800 font-pbold text-xs ml-2">
                         Aulas Realizadas
                       </Text>
                     </View>
@@ -1270,11 +1279,17 @@ export default function Perfil() {
 
           {/* Modal para Editar Apelido */}
           {showEditApelido && (
-            <KeyboardAvoidingView 
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              className="absolute inset-0 bg-black/50 justify-center items-center px-6"
+            <Modal
+              visible={showEditApelido}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setShowEditApelido(false)}
             >
-              <View className="bg-white rounded-2xl p-6 w-full max-w-sm">
+              <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}
+              >
+                <View className="bg-white rounded-2xl p-6 w-full max-w-sm mx-6">
                 <Text className="text-gray-800 font-pextrabold text-2xl text-center mb-4">
                   Editar Apelido
                 </Text>
@@ -1316,8 +1331,9 @@ export default function Perfil() {
                     </Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-            </KeyboardAvoidingView>
+                </View>
+              </KeyboardAvoidingView>
+            </Modal>
           )}
 
           {/* Modal para editar M2 Coins */}
@@ -1637,7 +1653,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: 'transparent',
     paddingVertical: 10,
     marginTop: -10,
     marginBottom: 10,
@@ -1651,5 +1667,9 @@ const styles = StyleSheet.create({
     fontSize: 56,
     fontWeight: 'bold',
     color: '#1E40AF',
+  },
+  gradientBar: {
+    height: 8,
+    width: '100%',
   },
 });
