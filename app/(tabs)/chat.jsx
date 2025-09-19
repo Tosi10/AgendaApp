@@ -7,7 +7,7 @@ import { useGlobal } from '../../context/GlobalProvider';
 import { db } from '../../lib/firebase';
 
 export default function Chat() {
-  const { user, userProfile } = useGlobal();
+  const { user, userProfile, updateUnreadCount } = useGlobal();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,9 @@ export default function Chat() {
         });
         setMessages(messagesData);
         setLoading(false);
+        
+        // Atualizar contador de mensagens não lidas
+        updateUnreadCount(messagesData);
         
         // Scroll para o final para mostrar mensagens mais recentes
         setTimeout(() => {

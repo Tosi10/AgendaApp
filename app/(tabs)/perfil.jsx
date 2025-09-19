@@ -1015,17 +1015,20 @@ export default function Perfil() {
                             </>
                           )}
                           
-                          <TouchableOpacity
-                            onPress={() => handleEditTipoUsuario(usuario.id)}
-                            className="bg-orange-500 rounded-lg p-3 border border-orange-400 shadow-sm"
-                          >
-                            <Text className="text-white font-pextrabold text-sm text-center">
-                              🔄 Alterar Tipo
-                            </Text>
-                          </TouchableOpacity>
+                          {/* Botão Alterar Tipo (apenas para não-admins) */}
+                          {usuario.tipoUsuario !== 'admin' && (
+                            <TouchableOpacity
+                              onPress={() => handleEditTipoUsuario(usuario.id)}
+                              className="bg-orange-500 rounded-lg p-3 border border-orange-400 shadow-sm"
+                            >
+                              <Text className="text-white font-pextrabold text-sm text-center">
+                                🔄 Alterar Tipo
+                              </Text>
+                            </TouchableOpacity>
+                          )}
                           
-                          {/* Botão Editar M2 Coins (apenas para alunos) */}
-                          {usuario.tipoUsuario === 'aluno' && (
+                          {/* Botão Editar M2 Coins (para alunos e personal) */}
+                          {(usuario.tipoUsuario === 'aluno' || usuario.tipoUsuario === 'personal') && (
                             <TouchableOpacity
                               onPress={() => handleUpdateUserCoins(usuario.id, usuario.m2Coins || 0)}
                               className="bg-blue-500 rounded-lg p-3 border border-blue-400 shadow-sm"

@@ -1,21 +1,51 @@
 {
   "cli": {
-    "version": ">= 5.9.1"
+    "version": ">= 16.13.3",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
-      "developmentClient": true,
-      "distribution": "internal"
+      "developmentClient": false,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENVIRONMENT": "development"
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENVIRONMENT": "preview"
       }
     },
-    "production": {}
+    "testflight": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "ios": {
+        "simulator": false,
+        "buildConfiguration": "Release"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENVIRONMENT": "production"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ENVIRONMENT": "production"
+      }
+    }
   },
   "submit": {
+    "testflight": {
+      "ios": {
+        "appleId": "rodrigotosi10@gmail.com",
+        "ascAppId": "6752307183",
+        "appleTeamId": "6YGD359UBW"
+      }
+    },
     "production": {}
   }
 } 

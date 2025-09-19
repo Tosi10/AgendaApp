@@ -1,8 +1,7 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import { Alert, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import FormField from '../../components/FormField';
 import { useGlobal } from '../../context/GlobalProvider';
@@ -63,75 +62,90 @@ export default function SignIn() {
       className="flex-1"
       resizeMode="cover"
     >
-      <LinearGradient
-        colors={['rgba(70, 78, 78, 0.7)', 'rgba(5, 130, 246, 0.5)', 'rgba(50, 16, 100, 0.5)']}
-        className="flex-1"
-      >
+      <View className="flex-1 bg-white/60">
         <ScrollView 
           className="flex-1 px-6"
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="mb-8">
-            <Text className="text-black font-pextrabold text-5xl mb-2">
+          {/* Logo M2 Academia */}
+          <View className="items-center mb-8">
+            <Image
+              source={require('../../assets/images/M2_1.png')}
+              className="w-32 h-32"
+              resizeMode="contain"
+            />
+            <Text className="text-2xl font-bold text-gray-800 mt-2">
+              M2 Academia
+            </Text>
+            <Text className="text-sm text-gray-600">
+              Academia de Futebol
+            </Text>
+          </View>
+
+          {/* Título de Boas-vindas */}
+          <View className="mb-4">
+            <Text className="text-gray-800 font-bold text-3xl mb-2 text-center">
               Bem-vindo!
             </Text>
-            <Text className="text-black font-pbold text-lg">
-              Faça login para continuar
-            </Text>
           </View>
 
-          <View className="space-y-4">
-            <FormField
-              label="E-mail"
-              placeholder="Digite seu e-mail"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={errors.email}
-            />
+          {/* Formulário */}
+          <View className="items-center">
+            <View className="space-y-2">
+              <FormField
+                label="E-mail"
+                placeholder="Digite seu e-mail"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={errors.email}
+              />
 
-            <FormField
-              label="Senha"
-              placeholder="Digite sua senha"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              error={errors.password}
-            />
-
-            <CustomButton
-              title={loading ? 'Entrando...' : 'Entrar'}
-              onPress={handleSignIn}
-              loading={loading}
-              className="mt-6"
-            />
-
-            <View className="mt-4 flex-row justify-center">
-              <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
-                <Text className="text-blue-600 font-pbold text-base underline">
-                  Esqueci minha senha
-                </Text>
-              </TouchableOpacity>
+              <FormField
+                label="Senha"
+                placeholder="Digite sua senha"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                error={errors.password}
+              />
             </View>
 
-            <View className="mt-6 flex-row justify-center items-center">
-              <Text className="text-black font-pregular text-base">
-                Não tem uma conta?{' '}
+            <View className="mt-8">
+              <CustomButton
+                title={loading ? 'Entrando...' : 'Entrar'}
+                onPress={handleSignIn}
+                loading={loading}
+                className="w-full"
+              />
+            </View>
+          </View>
+
+          <View className="flex-row justify-center" style={{ marginTop: 80 }}>
+            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+              <Text className="text-blue-600 font-bold text-base underline">
+                Esqueci minha senha
               </Text>
-                             <TouchableOpacity 
-                onPress={() => router.push('/(auth)/sign-up')}
-                className="bg-yellow-500 border-2 border-yellow-600 rounded-lg px-2 py-1"
-              >
-                <Text className="text-black font-pextrabold text-sm" style={{ fontWeight: '900' }}>
-                  Criar conta
-                </Text>
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
+          </View>
+
+          <View className="mt-6 flex-row justify-center items-center">
+            <Text className="text-gray-700 font-medium text-base">
+              Não tem uma conta?{' '}
+            </Text>
+            <TouchableOpacity 
+              onPress={() => router.push('/(auth)/sign-up')}
+              className="bg-yellow-500 border-2 border-yellow-600 rounded-lg px-3 py-2"
+            >
+              <Text className="text-black font-bold text-sm">
+                Criar conta
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
-      </LinearGradient>
+      </View>
     </ImageBackground>
   );
-} 
+}

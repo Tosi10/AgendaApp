@@ -11,16 +11,16 @@ export default function FormField({
   error = null
 }) {
   return (
-    <View className="mb-4">
+    <View className="mb-2">
       {label && (
-        <Text className="text-black font-pextrabold text-xl mb-2">
+        <Text className="text-gray-900 font-bold text-base mb-1 text-left">
           {label}
         </Text>
       )}
       <TextInput
-        className="bg-white/90 border-4 border-blue-800 rounded-3xl px-6 py-3 text-black font-pbold text-lg"
+        className="bg-white rounded-xl px-4 py-3 text-gray-800 font-medium text-base w-80"
         placeholder={placeholder}
-        placeholderTextColor="#666666"
+        placeholderTextColor="#9CA3AF"
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}
@@ -30,11 +30,12 @@ export default function FormField({
           // Garantir que não haja mudança de cor quando focado
           outlineStyle: 'none',
           // Remover qualquer estilo de foco padrão
-          borderColor: '#1e40af', // blue-800
+          borderWidth: 3,
+          borderColor: error ? '#EF4444' : '#4B5563', // red-500 ou gray-600
         }}
       />
       {error && (
-        <Text className="text-red-500 font-pregular text-sm mt-1">
+        <Text className="text-red-500 font-medium text-sm mt-1">
           {error}
         </Text>
       )}

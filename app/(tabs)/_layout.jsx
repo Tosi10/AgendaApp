@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { Text, View } from 'react-native';
 import { useGlobal } from '../../context/GlobalProvider';
 
 export default function TabsLayout() {
-  const { setCurrentTab, triggerResetHistorico } = useGlobal();
+  const { setCurrentTab, triggerResetHistorico, unreadMessagesCount, clearUnreadCount } = useGlobal();
 
   const handleTabPress = (tabName) => {
     setCurrentTab(tabName);
@@ -11,6 +12,43 @@ export default function TabsLayout() {
     if (tabName === 'perfil') {
       triggerResetHistorico();
     }
+    // Limpar notificações quando entrar no chat
+    if (tabName === 'chat') {
+      clearUnreadCount();
+    }
+  };
+
+  // Componente para ícone do chat com badge
+  const ChatIconWithBadge = ({ color, size }) => {
+    return (
+      <View style={{ position: 'relative' }}>
+        <Ionicons name="chatbubbles" size={size} color={color} />
+        {unreadMessagesCount > 0 && (
+          <View style={{
+            position: 'absolute',
+            top: -2,
+            right: -6,
+            backgroundColor: '#EF4444',
+            borderRadius: 10,
+            minWidth: 20,
+            height: 20,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 2,
+            borderColor: '#1e40af'
+          }}>
+            <Text style={{
+              color: 'white',
+              fontSize: 12,
+              fontWeight: 'bold',
+              textAlign: 'center'
+            }}>
+              {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
   };
 
   return (
@@ -58,7 +96,7 @@ export default function TabsLayout() {
           title: 'Chat',
           tabBarLabel: 'Chat',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
+            <ChatIconWithBadge color={color} size={size} />
           ),
         }}
         listeners={{

@@ -45,6 +45,10 @@ export default function CustomButton({
       className={getButtonStyle()}
       onPress={onPress}
       disabled={disabled || loading}
+      style={{
+        minWidth: 320, // Largura mínima igual aos campos
+        width: '85%', // Largura total
+      }}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'outline' ? '#FF9C01' : '#000'} />

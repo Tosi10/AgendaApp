@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
@@ -12,6 +13,10 @@ export function GlobalProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState('home');
   const [resetHistorico, setResetHistorico] = useState(0);
+  
+  // Estados para notificações de chat
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [lastChatVisit, setLastChatVisit] = useState(null);
 
   // Função para criar perfil de usuário
   const createUserProfile = async (userData) => {
@@ -209,6 +214,69 @@ export function GlobalProvider({ children }) {
     });
   };
 
+  // Função para marcar chat como visitado por usuário específico
+  const markChatAsVisited = async () => {
+    if (!user?.uid) return;
+    
+    const now = new Date();
+    setLastChatVisit(now);
+    setUnreadMessagesCount(0);
+    
+    // Salvar no AsyncStorage com chave específica do usuário
+    try {
+      const userKey = `lastChatVisit_${user.uid}`;
+      await AsyncStorage.setItem(userKey, now.toISOString());
+    } catch (error) {
+      console.log('Erro ao salvar última visita do chat:', error);
+    }
+  };
+
+  // Função para carregar última visita do usuário específico
+  const loadLastChatVisit = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const userKey = `lastChatVisit_${user.uid}`;
+      const savedVisit = await AsyncStorage.getItem(userKey);
+      if (savedVisit) {
+        const visitDate = new Date(savedVisit);
+        setLastChatVisit(visitDate);
+      }
+    } catch (error) {
+      console.log('Erro ao carregar última visita do chat:', error);
+    }
+  };
+
+  // Função para contar mensagens não lidas por usuário específico
+  const countUnreadMessages = (messages) => {
+    if (!lastChatVisit || !user?.uid) {
+      return 0;
+    }
+    
+    const unreadCount = messages.filter(message => {
+      const messageTime = message.timestamp?.toDate ? message.timestamp.toDate() : new Date(message.timestamp);
+      const isAfterLastVisit = messageTime > lastChatVisit;
+      const isNotOwnMessage = message.userId !== user.uid;
+      
+      return isAfterLastVisit && isNotOwnMessage;
+    }).length;
+    
+    return unreadCount;
+  };
+
+  // Função para atualizar contador de mensagens não lidas
+  const updateUnreadCount = (messages) => {
+    const count = countUnreadMessages(messages);
+    setUnreadMessagesCount(count);
+  };
+
+  // Função para limpar notificações (quando entrar no chat)
+  const clearUnreadCount = () => {
+    setUnreadMessagesCount(0);
+    // Marcar como visitado quando limpar
+    markChatAsVisited();
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
@@ -250,6 +318,13 @@ export function GlobalProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
+  // Carregar última visita do chat quando usuário fizer login
+  useEffect(() => {
+    if (user?.uid) {
+      loadLastChatVisit();
+    }
+  }, [user?.uid]);
+
   const signOut = async () => {
     try {
       await auth.signOut();
@@ -277,7 +352,12 @@ export function GlobalProvider({ children }) {
     updateCurrentUserM2Coins,
     approveUser,
     rejectUser,
-    fetchAllUsers
+    fetchAllUsers,
+    // Notificações de chat (por usuário específico)
+    unreadMessagesCount,
+    updateUnreadCount,
+    clearUnreadCount,
+    markChatAsVisited
   };
 
   return (
