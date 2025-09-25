@@ -277,13 +277,6 @@ export default function Home() {
               
               <View className="space-y-3">
                 <View className="flex-row items-center">
-                  <Ionicons name="call" size={20} color="#3B82F6" />
-                  <Text className="text-gray-700 font-pregular text-base ml-3">
-                    {INFO_EMPRESA.telefone}
-                  </Text>
-                </View>
-                
-                <View className="flex-row items-center">
                   <Ionicons name="logo-whatsapp" size={20} color="#10B981" />
                   <Text className="text-gray-700 font-pregular text-base ml-3">
                     {INFO_EMPRESA.whatsapp}
@@ -291,26 +284,9 @@ export default function Home() {
                 </View>
                 
                 <View className="flex-row items-center">
-                  <Ionicons name="mail" size={20} color="#EF4444" />
-                  <Text className="text-gray-700 font-pregular text-base ml-3">
-                    {INFO_EMPRESA.email}
-                  </Text>
-                </View>
-                
-                <View className="flex-row items-center">
                   <Ionicons name="logo-instagram" size={20} color="#EC4899" />
                   <Text className="text-gray-700 font-pregular text-base ml-3">
                     {INFO_EMPRESA.instagram}
-                  </Text>
-                </View>
-                
-                {/* PIX corrigido */}
-                <View className="bg-gradient-to-r from-green-500 to-blue-500 rounded-lg p-4 mt-4">
-                  <Text className="text-white font-pextrabold text-center text-lg">
-                    💰 PIX: {INFO_EMPRESA?.pix || '10356007000102'}
-                  </Text>
-                  <Text className="text-white font-pregular text-sm text-center mt-1">
-                    CNPJ da empresa
                   </Text>
                 </View>
               </View>

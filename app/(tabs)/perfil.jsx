@@ -883,6 +883,8 @@ export default function Perfil() {
                       placeholderTextColor="#9CA3AF"
                       value={searchQuery}
                       onChangeText={setSearchQuery}
+                      multiline={false}
+                      numberOfLines={1}
                     />
                     {searchQuery.length > 0 && (
                       <TouchableOpacity
@@ -1229,23 +1231,9 @@ export default function Perfil() {
                 </View>
                 
                 <View className="flex-row items-center">
-                  <Ionicons name="call" size={20} color="#10B981" />
-                  <Text className="text-gray-700 font-pregular text-base ml-3">
-                    {INFO_EMPRESA.telefone}
-                  </Text>
-                </View>
-                
-                <View className="flex-row items-center">
                   <Ionicons name="logo-whatsapp" size={20} color="#10B981" />
                   <Text className="text-gray-700 font-pregular text-base ml-3">
                     {INFO_EMPRESA.whatsapp}
-                  </Text>
-                </View>
-                
-                <View className="flex-row items-center">
-                  <Ionicons name="mail" size={20} color="#EF4444" />
-                  <Text className="text-gray-700 font-pregular text-base ml-3">
-                    {INFO_EMPRESA.email}
                   </Text>
                 </View>
                 
@@ -1255,13 +1243,15 @@ export default function Perfil() {
                     {INFO_EMPRESA.instagram}
                   </Text>
                 </View>
+                
+                <View className="flex-row items-center">
+                  <Ionicons name="card" size={20} color="#10B981" />
+                  <Text className="text-gray-700 font-pregular text-base ml-3">
+                    PIX: {INFO_EMPRESA.pix}
+                  </Text>
+                </View>
               </View>
               
-              <View className="bg-blue-50 rounded-lg p-4 mt-4 border border-blue-200">
-                <Text className="text-blue-800 font-pregular text-sm text-center">
-                  💳 PIX: {INFO_EMPRESA.pix}
-                </Text>
-              </View>
             </View>
           </View>
 

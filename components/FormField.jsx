@@ -13,12 +13,12 @@ export default function FormField({
   return (
     <View className="mb-2">
       {label && (
-        <Text className="text-gray-900 font-bold text-base mb-1 text-left">
+        <Text className="text-gray-900 font-bold text-lg mb-1 text-left">
           {label}
         </Text>
       )}
       <TextInput
-        className="bg-white rounded-xl px-4 py-3 text-gray-800 font-medium text-base w-80"
+        className="bg-white rounded-xl px-4 py-3 text-gray-800 font-medium text-base w-72"
         placeholder={placeholder}
         placeholderTextColor="#9CA3AF"
         value={value}
@@ -26,6 +26,8 @@ export default function FormField({
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
+        multiline={false}
+        numberOfLines={1}
         style={{
           // Garantir que não haja mudança de cor quando focado
           outlineStyle: 'none',

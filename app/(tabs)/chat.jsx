@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -12,7 +13,11 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [resetChat, setResetChat] = useState(0);
   const scrollViewRef = useRef();
 
   // Verificar se o usuário pode usar o chat
@@ -33,12 +38,25 @@ export default function Chat() {
     };
   }, []);
 
-  // Carregar mensagens do Firestore
-  useEffect(() => {
+  // Função para obter o início do dia atual
+  const getStartOfDay = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
+
+  // Carregar mensagens do dia atual
+  const loadTodayMessages = () => {
     if (!user) return;
 
+    const startOfDay = getStartOfDay();
+    
     const unsubscribe = onSnapshot(
-      query(collection(db, 'chat'), orderBy('timestamp', 'asc')),
+      query(
+        collection(db, 'chat'), 
+        where('timestamp', '>=', startOfDay),
+        orderBy('timestamp', 'asc')
+      ),
       (snapshot) => {
         const messagesData = [];
         snapshot.forEach((doc) => {
@@ -49,7 +67,9 @@ export default function Chat() {
             timestamp: data.timestamp?.toDate() || new Date()
           });
         });
+        
         setMessages(messagesData);
+        
         setLoading(false);
         
         // Atualizar contador de mensagens não lidas
@@ -66,6 +86,72 @@ export default function Chat() {
       }
     );
 
+    return unsubscribe;
+  };
+
+  // Carregar mensagens de dias anteriores
+  const loadMoreMessages = async () => {
+    if (!user || loadingMore || !hasMoreMessages) return;
+
+    setLoadingMore(true);
+    
+    try {
+      const startOfDay = getStartOfDay();
+      let queryRef = query(
+        collection(db, 'chat'),
+        where('timestamp', '<', startOfDay),
+        orderBy('timestamp', 'desc'),
+        limit(20)
+      );
+
+      if (lastMessageTimestamp) {
+        queryRef = query(
+          collection(db, 'chat'),
+          where('timestamp', '<', lastMessageTimestamp),
+          orderBy('timestamp', 'desc'),
+          limit(20)
+        );
+      }
+
+      const snapshot = await getDocs(queryRef);
+      const newMessages = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        newMessages.push({
+          id: doc.id,
+          ...data,
+          timestamp: data.timestamp?.toDate() || new Date()
+        });
+      });
+
+      if (newMessages.length > 0) {
+        setLastMessageTimestamp(newMessages[newMessages.length - 1].timestamp);
+        setMessages(prev => [...newMessages.reverse(), ...prev]);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar mais mensagens:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Reset quando a aba ganhar foco (igual ao perfil)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Aba Chat ganhou foco - Resetando para mensagens do dia');
+      setHasMoreMessages(true);
+      setLastMessageTimestamp(null);
+    }, [])
+  );
+
+  // Carregar mensagens
+  useEffect(() => {
+    if (!user) return;
+    
+    const unsubscribe = loadTodayMessages();
     return () => unsubscribe();
   }, [user]);
 
@@ -218,7 +304,22 @@ export default function Chat() {
               </Text>
             </View>
           ) : (
-            messages.map((message) => {
+            <View>
+              {/* Botão para carregar mensagens anteriores */}
+              {hasMoreMessages && (
+                <TouchableOpacity 
+                  style={styles.loadMoreButton}
+                  onPress={loadMoreMessages}
+                  disabled={loadingMore}
+                >
+                  <Text style={styles.loadMoreText}>
+                    {loadingMore ? 'Carregando...' : 'Carregar mensagens anteriores'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              
+              {messages.map((message) => {
               const isOwnMessage = message.userId === user?.uid;
               const showDate = true; // Sempre mostrar data para simplicidade
               
@@ -243,13 +344,6 @@ export default function Chat() {
                       ]}>
                         {message.userName}
                       </Text>
-                      <Text style={[
-                        styles.userType,
-                        isOwnMessage ? styles.ownUserType : styles.otherUserType
-                      ]}>
-                        {message.userType === 'admin' ? 'Professor' : 
-                         message.userType === 'personal' ? 'Personal' : 'Aluno'}
-                      </Text>
                     </View>
                     
                     <Text style={[
@@ -268,7 +362,8 @@ export default function Chat() {
                   </View>
                 </View>
               );
-            })
+            })}
+            </View>
           )}
         </ScrollView>
 
@@ -374,6 +469,30 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
   },
+  loadMoreButton: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 24,
+    marginVertical: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
   messageWrapper: {
     marginBottom: 16,
   },
@@ -450,21 +569,6 @@ const styles = StyleSheet.create({
   },
   otherUserName: {
     color: '#374151',
-  },
-  userType: {
-    fontSize: 12,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  ownUserType: {
-    backgroundColor: '#1E40AF',
-    color: '#DBEAFE',
-  },
-  otherUserType: {
-    backgroundColor: '#E5E7EB',
-    color: '#6B7280',
   },
   messageText: {
     fontSize: 16,

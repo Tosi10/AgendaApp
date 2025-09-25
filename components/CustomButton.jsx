@@ -6,22 +6,24 @@ export default function CustomButton({
   loading = false, 
   disabled = false,
   variant = 'primary', // 'primary', 'secondary', 'outline'
-  className = ''
+  className = '',
+  style = {}
 }) {
   const getButtonStyle = () => {
-    const baseStyle = 'px-6 py-3 rounded-lg items-center justify-center';
+    const baseStyle = 'py-3 rounded-lg items-center justify-center';
+    const paddingStyle = className.includes('w-') ? '' : 'px-6';
     
     if (disabled || loading) {
-      return `${baseStyle} bg-gray-600 opacity-50 ${className}`;
+      return `${baseStyle} ${paddingStyle} bg-gray-600 opacity-50 ${className}`;
     }
     
     switch (variant) {
       case 'secondary':
-        return `${baseStyle} bg-secondary border-4 border-yellow-600 ${className}`;
+        return `${baseStyle} ${paddingStyle} bg-secondary border-4 border-yellow-600 ${className}`;
       case 'outline':
-        return `${baseStyle} border-4 border-yellow-600 bg-transparent ${className}`;
+        return `${baseStyle} ${paddingStyle} border-4 border-yellow-600 bg-transparent ${className}`;
       default:
-        return `${baseStyle} bg-secondary border-4 border-yellow-600 ${className}`;
+        return `${baseStyle} ${paddingStyle} bg-secondary border-4 border-yellow-600 ${className}`;
     }
   };
 
@@ -45,10 +47,7 @@ export default function CustomButton({
       className={getButtonStyle()}
       onPress={onPress}
       disabled={disabled || loading}
-      style={{
-        minWidth: 320, // Largura mínima igual aos campos
-        width: '85%', // Largura total
-      }}
+      style={style}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'outline' ? '#FF9C01' : '#000'} />

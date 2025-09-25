@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useState } from 'react';
-import { Alert, Image, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import FormField from '../../components/FormField';
 import { auth } from '../../lib/firebase';
@@ -45,42 +45,30 @@ export default function ForgotPassword() {
   }
 
   return (
-    <ImageBackground 
-      source={require('../../assets/images/M2_9.png')} 
-      className="flex-1"
-      resizeMode="cover"
-    >
-      <View className="flex-1 bg-white/60">
-        <ScrollView 
-          className="flex-1 px-6"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Logo M2 Academia */}
-          <View className="items-center mb-6">
-            <Image
-              source={require('../../assets/images/M2_1.png')}
-              className="w-28 h-28"
-              resizeMode="contain"
-            />
-            <Text className="text-xl font-bold text-gray-800 mt-2">
-              M2 Academia
-            </Text>
-            <Text className="text-sm text-gray-600">
-              Academia de Futebol
-            </Text>
-          </View>
+    <View className="flex-1 bg-blue-900">
+      <ImageBackground 
+        source={require('../../assets/images/M2_3.png')} 
+        className="flex-1"
+        resizeMode="contain"
+      >
+        <View className="flex-1 bg-white/40">
+          <ScrollView 
+            className="flex-1 px-6"
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Título de Recuperação */}
+            <View className="mb-6">
+              <Text className="text-gray-800 font-bold text-4xl mb-2 text-center">
+                Recuperar Senha
+              </Text>
+              <Text className="text-blue-600 text-base text-center">
+                Digite seu e-mail para receber o link de recuperação
+              </Text>
+            </View>
 
-          {/* Título de Recuperação */}
-          <View className="mb-4">
-            <Text className="text-gray-800 font-bold text-2xl mb-2 text-center">
-              Recuperar Senha
-            </Text>
-          </View>
-
-          {/* Formulário */}
-          <View className="items-center">
-            <View className="space-y-2">
+            {/* Formulário */}
+            <View className="items-center space-y-4">
               <FormField
                 label="E-mail"
                 placeholder="Digite seu e-mail cadastrado"
@@ -92,25 +80,26 @@ export default function ForgotPassword() {
               />
             </View>
 
-            <View className="mt-8">
+            <View className="mt-8 items-center">
               <CustomButton
                 title={loading ? 'Enviando...' : 'Enviar Email de Recuperação'}
                 onPress={handleResetPassword}
                 loading={loading}
                 className="w-full"
+                style={{ width: 285 }}
               />
             </View>
-          </View>
 
-          <View className="mt-6 flex-row justify-center">
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text className="text-blue-600 font-bold text-base underline">
-                ← Voltar ao Login
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </View>
-    </ImageBackground>
+            <View className="mt-6 flex-row justify-center">
+              <TouchableOpacity onPress={() => router.back()}>
+                <Text className="text-blue-600 font-bold text-base underline">
+                  ← Voltar ao Login
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </ImageBackground>
+    </View>
   );
 }

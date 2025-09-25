@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import { Alert, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import FormField from '../../components/FormField';
 import { useGlobal } from '../../context/GlobalProvider';
@@ -57,42 +57,36 @@ export default function SignIn() {
   }
 
   return (
-    <ImageBackground 
-      source={require('../../assets/images/M2_9.png')} 
-      className="flex-1"
-      resizeMode="cover"
-    >
-      <KeyboardAvoidingView 
+    <View className="flex-1 bg-blue-900">
+      <ImageBackground 
+        source={require('../../assets/images/M2_3.png')} 
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        resizeMode="contain"
       >
-        <View className="flex-1 bg-white/60">
+        <KeyboardAvoidingView 
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <View className="flex-1 bg-white/40">
           <ScrollView 
             className="flex-1 px-6"
             contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-          {/* Logo M2 Academia */}
-          <View className="items-center mb-8">
-            <Image
-              source={require('../../assets/images/M2_1.png')}
-              className="w-32 h-32"
-              resizeMode="contain"
-            />
-          </View>
+            {/* Título de Boas-vindas */}
+            <View className="mb-6">
+              <Text className="text-gray-800 font-bold text-4xl mb-2 text-center">
+                Bem-vindo!
+              </Text>
+              <Text className="text-blue-600 text-base text-center">
+                Faça login para continuar
+              </Text>
+            </View>
 
-          {/* Título de Boas-vindas */}
-          <View className="mb-4">
-            <Text className="text-gray-800 font-bold text-3xl mb-2 text-center">
-              Bem-vindo!
-            </Text>
-          </View>
-
-          {/* Formulário */}
-          <View className="items-center">
-            <View className="space-y-2">
+            {/* Formulário */}
+            <View className="items-center space-y-4">
               <FormField
                 label="E-mail"
                 placeholder="Digite seu e-mail"
@@ -113,40 +107,41 @@ export default function SignIn() {
               />
             </View>
 
-            <View className="mt-8">
+            <View className="mt-8 items-center">
               <CustomButton
                 title={loading ? 'Entrando...' : 'Entrar'}
                 onPress={handleSignIn}
                 loading={loading}
                 className="w-full"
+                style={{ width: 285 }}
               />
             </View>
-          </View>
 
-          <View className="flex-row justify-center" style={{ marginTop: 80 }}>
-            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
-              <Text className="text-blue-600 font-bold text-base underline">
-                Esqueci minha senha
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <View className="flex-row justify-center mt-6">
+              <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+                <Text className="text-blue-600 font-bold text-base underline">
+                  Esqueci minha senha
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          <View className="mt-6 flex-row justify-center items-center">
-            <Text className="text-gray-700 font-medium text-base">
-              Não tem uma conta?{' '}
-            </Text>
-            <TouchableOpacity 
-              onPress={() => router.push('/(auth)/sign-up')}
-              className="bg-yellow-500 border-2 border-yellow-600 rounded-lg px-3 py-2"
-            >
-              <Text className="text-black font-bold text-sm">
-                Criar conta
+            <View className="mt-6 flex-row justify-center items-center">
+              <Text className="text-gray-700 font-medium text-base">
+                Não tem uma conta?{' '}
               </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+              <TouchableOpacity 
+                onPress={() => router.push('/(auth)/sign-up')}
+                className="bg-yellow-500 border-2 border-yellow-600 rounded-lg px-3 py-2"
+              >
+                <Text className="text-black font-bold text-sm">
+                  Criar conta
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </ImageBackground>
+    </View>
   );
 }

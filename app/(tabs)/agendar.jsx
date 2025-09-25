@@ -418,7 +418,7 @@ export default function Agendar() {
 
 
           {/* Calendário semanal */}
-          <View className="bg-blue-600 px-6 py-16">
+          <View className="bg-blue-600 px-6 py-12">
             {/* Header do calendário com navegação de MESES */}
             <View className="flex-row items-center justify-between mb-4">
               <TouchableOpacity
@@ -517,7 +517,7 @@ export default function Agendar() {
                     <TouchableOpacity
                       key={index}
                       onPress={() => setSelectedDay(day)}
-                      className={`flex-1 items-center py-3 rounded-lg mx-1 border-4 ${
+                      className={`flex-1 items-center py-1 rounded-lg mx-1 border-4 ${
                         isSelected(day)
                           ? 'bg-yellow-400 border-yellow-500'
                           : isToday(day)
@@ -954,13 +954,6 @@ export default function Agendar() {
             <View className="bg-white rounded-2xl p-6 border border-gray-200">
               <View className="space-y-3">
                 <View className="flex-row items-center">
-                  <Ionicons name="call" size={20} color="#3B82F6" />
-                  <Text className="text-gray-700 font-pregular text-base ml-3">
-                    {INFO_EMPRESA.telefone}
-                  </Text>
-                </View>
-                
-                <View className="flex-row items-center">
                   <Ionicons name="logo-whatsapp" size={20} color="#10B981" />
                   <Text className="text-gray-700 font-pregular text-base ml-3">
                     {INFO_EMPRESA.whatsapp}
@@ -968,9 +961,9 @@ export default function Agendar() {
                 </View>
                 
                 <View className="flex-row items-center">
-                  <Ionicons name="mail" size={20} color="#EF4444" />
+                  <Ionicons name="logo-instagram" size={20} color="#EC4899" />
                   <Text className="text-gray-700 font-pregular text-base ml-3">
-                    {INFO_EMPRESA.email}
+                    {INFO_EMPRESA.instagram}
                   </Text>
                 </View>
               </View>
@@ -1013,7 +1006,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#2563eb',
     paddingHorizontal: 24,
-    paddingVertical: 64,
+    paddingVertical: 20,
     flexDirection: 'row',
     alignItems: 'center',
   },
