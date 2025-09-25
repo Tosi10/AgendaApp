@@ -258,7 +258,7 @@ export default function Home() {
                 
                 <View className="flex-row items-start">
                   <Text className="text-yellow-600 font-pbold text-lg mr-2">
-                    🎁
+                    📅
                   </Text>
                   <Text className="text-gray-700 font-pregular text-sm flex-1">
                     As aulas deverão ser pré-agendadas conforme disponibilidade

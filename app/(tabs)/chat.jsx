@@ -72,9 +72,6 @@ export default function Chat() {
         
         setLoading(false);
         
-        // Atualizar contador de mensagens não lidas
-        updateUnreadCount(messagesData);
-        
         // Scroll para o final para mostrar mensagens mais recentes
         setTimeout(() => {
           scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -83,6 +80,37 @@ export default function Chat() {
       (error) => {
         console.error('Erro ao carregar mensagens:', error);
         setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  };
+
+  // Carregar TODAS as mensagens para contagem de não lidas
+  const loadAllMessagesForUnreadCount = () => {
+    if (!user) return;
+
+    const unsubscribe = onSnapshot(
+      query(
+        collection(db, 'chat'), 
+        orderBy('timestamp', 'desc')
+      ),
+      (snapshot) => {
+        const allMessages = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          allMessages.push({
+            id: doc.id,
+            ...data,
+            timestamp: data.timestamp?.toDate() || new Date()
+          });
+        });
+        
+        // Atualizar contador de mensagens não lidas com TODAS as mensagens
+        updateUnreadCount(allMessages);
+      },
+      (error) => {
+        console.error('Erro ao carregar mensagens para contagem:', error);
       }
     );
 
@@ -151,8 +179,16 @@ export default function Chat() {
   useEffect(() => {
     if (!user) return;
     
-    const unsubscribe = loadTodayMessages();
-    return () => unsubscribe();
+    // Carregar mensagens do dia atual para exibição
+    const unsubscribeToday = loadTodayMessages();
+    
+    // Carregar todas as mensagens para contagem de não lidas
+    const unsubscribeAll = loadAllMessagesForUnreadCount();
+    
+    return () => {
+      unsubscribeToday();
+      unsubscribeAll();
+    };
   }, [user]);
 
   // Enviar mensagem

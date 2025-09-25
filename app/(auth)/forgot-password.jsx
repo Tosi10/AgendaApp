@@ -50,6 +50,7 @@ export default function ForgotPassword() {
         source={require('../../assets/images/M2_3.png')} 
         className="flex-1"
         resizeMode="contain"
+        style={{ transform: [{ scale: 1.05 }, { translateX: -13 }, { translateY: -5 }] }}
       >
         <View className="flex-1 bg-white/40">
           <ScrollView 
@@ -58,7 +59,7 @@ export default function ForgotPassword() {
             showsVerticalScrollIndicator={false}
           >
             {/* Título de Recuperação */}
-            <View className="mb-6">
+            <View className="mb-6" style={{ transform: [{ translateX: -8 }, { translateY: -5 }] }}>
               <Text className="text-gray-800 font-bold text-4xl mb-2 text-center">
                 Recuperar Senha
               </Text>

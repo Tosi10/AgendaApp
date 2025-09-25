@@ -93,6 +93,7 @@ export default function SignUp() {
         source={require('../../assets/images/M2_3.png')} 
         className="flex-1"
         resizeMode="contain"
+        style={{ transform: [{ scale: 1.05 }, { translateX: -13 }, { translateY: -5 }] }}
       >
         <KeyboardAvoidingView 
           className="flex-1"
@@ -107,7 +108,7 @@ export default function SignUp() {
               keyboardShouldPersistTaps="handled"
             >
               {/* Título de Cadastro */}
-              <View className="mb-6">
+              <View className="mb-6" style={{ transform: [{ translateX: -8 }, { translateY: -5 }] }}>
                 <Text className="text-gray-800 font-bold text-4xl mb-2 text-center">
                   Criar conta
                 </Text>

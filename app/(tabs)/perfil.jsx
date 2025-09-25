@@ -13,7 +13,7 @@ import { PLANOS_DISPONIVEIS, PLANO_PERSONAL_TRAINING } from '../../constants/Pla
 import { useGlobal } from '../../context/GlobalProvider';
 
 export default function Perfil() {
-  const { user, signOut, userProfile, updateApelido, updateUserM2Coins, approveUser, rejectUser, fetchAllUsers } = useGlobal();
+  const { user, signOut, userProfile, updateApelido, updateUserM2Coins, approveUser, rejectUser, deleteUser, fetchAllUsers } = useGlobal();
   const [historicoAulas, setHistoricoAulas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditApelido, setShowEditApelido] = useState(false);
@@ -337,18 +337,18 @@ export default function Perfil() {
 
   const handleRejectUser = async (userId) => {
     try {
-      // Atualizar status para rejeitado no Firestore
+      // Atualizar status para bloqueado no Firestore
       const userRef = doc(db, 'usuarios', userId);
       await updateDoc(userRef, {
         aprovado: false,
-        status: 'rejeitado',
-        dataRejeicao: new Date()
+        status: 'bloqueado',
+        dataBloqueio: new Date()
       });
       
-      Alert.alert('Sucesso', 'Usuário rejeitado. Ele não poderá fazer login.');
+      Alert.alert('Sucesso', 'Usuário bloqueado. Ele não poderá fazer login.');
     } catch (error) {
-      console.error('Erro ao rejeitar usuário:', error);
-      Alert.alert('Erro', 'Não foi possível rejeitar o usuário');
+      console.error('Erro ao bloquear usuário:', error);
+      Alert.alert('Erro', 'Não foi possível bloquear o usuário');
     }
   };
 
@@ -366,6 +366,32 @@ export default function Perfil() {
   const handleEditTipoUsuario = async (userId) => {
     setUsuarioEditandoTipo({ id: userId });
     setShowTipoUsuarioModal(true);
+  };
+
+  const handleDeleteUser = async (userId) => {
+    Alert.alert(
+      'Confirmar Exclusão',
+      'Tem certeza que deseja deletar este usuário permanentemente? Esta ação não pode ser desfeita.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Deletar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteUser(userId);
+              Alert.alert('Sucesso', 'Usuário deletado permanentemente.');
+            } catch (error) {
+              console.error('Erro ao deletar usuário:', error);
+              Alert.alert('Erro', 'Não foi possível deletar o usuário');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const aplicarPlano = async (plano) => {
@@ -971,8 +997,8 @@ export default function Perfil() {
                         </View>
                         
                         <View className="flex-row items-center justify-between mb-4">
-                          {/* M2 Coins (apenas para alunos) */}
-                          {usuario.tipoUsuario === 'aluno' && (
+                          {/* M2 Coins (para alunos e personal) */}
+                          {(usuario.tipoUsuario === 'aluno' || usuario.tipoUsuario === 'personal') && (
                             <View className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
                               <Text className="text-gray-600 text-sm font-pbold">
                                 M2 Coins: <Text className="text-blue-600 font-pextrabold">{usuario.m2Coins || 0}</Text>
@@ -1008,7 +1034,7 @@ export default function Perfil() {
                                   className="bg-red-500 rounded-lg p-3 border border-red-400 shadow-sm"
                                 >
                                   <Text className="text-white font-pextrabold text-sm text-center">
-                                    ❌ Rejeitar Usuário
+                                    🚫 Bloquear Usuário
                                   </Text>
                                 </TouchableOpacity>
                               )}
@@ -1046,6 +1072,18 @@ export default function Perfil() {
                             >
                               <Text className="text-white font-pextrabold text-sm text-center">
                                 💰 Editar M2 Coins
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                          
+                          {/* Botão Deletar Usuário (apenas para não-admins) */}
+                          {usuario.tipoUsuario !== 'admin' && (
+                            <TouchableOpacity
+                              onPress={() => handleDeleteUser(usuario.id)}
+                              className="bg-red-600 rounded-lg p-3 border border-red-500 shadow-sm"
+                            >
+                              <Text className="text-white font-pextrabold text-sm text-center">
+                                🗑️ Deletar Usuário
                               </Text>
                             </TouchableOpacity>
                           )}

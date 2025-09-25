@@ -88,6 +88,5 @@ export const PLANO_PERSONAL_TRAINING = {
 
 export const REGRAS_REPOSICAO = [
   '❌ Reposição de aulas somente com atestado médico',
-  '❌ Reposição durante a vigência do plano',
-  '🎁 As aulas devem ser pré-agendadas conforme disponibilidade'
+  '❌ Reposição durante a vigência do plano'
 ];

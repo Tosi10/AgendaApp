@@ -20,6 +20,7 @@ export default function TabsLayout() {
 
   // Componente para ícone do chat com badge
   const ChatIconWithBadge = ({ color, size }) => {
+    console.log('🔍 DEBUG: ChatIconWithBadge renderizado - unreadMessagesCount:', unreadMessagesCount);
     return (
       <View style={{ position: 'relative' }}>
         <Ionicons name="chatbubbles" size={size} color={color} />

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../lib/firebase';
 
@@ -200,6 +200,17 @@ export function GlobalProvider({ children }) {
     }
   };
 
+  // Função para deletar usuário permanentemente (apenas para admins)
+  const deleteUser = async (userId) => {
+    try {
+      const userRef = doc(db, 'usuarios', userId);
+      await deleteDoc(userRef);
+    } catch (error) {
+      console.error('Erro ao deletar usuário:', error);
+      throw error;
+    }
+  };
+
   // Função para buscar todos os usuários (apenas para admins)
   const fetchAllUsers = (callback) => {
     if (!userProfile || userProfile.tipoUsuario !== 'admin') return null;
@@ -251,28 +262,49 @@ export function GlobalProvider({ children }) {
   // Função para contar mensagens não lidas por usuário específico
   const countUnreadMessages = (messages) => {
     if (!lastChatVisit || !user?.uid) {
+      console.log('🔍 DEBUG: countUnreadMessages chamada');
+      console.log('🔍 DEBUG: lastChatVisit:', lastChatVisit);
+      console.log('🔍 DEBUG: user.uid:', user?.uid);
       return 0;
     }
+    
+    console.log('🔍 DEBUG: countUnreadMessages chamada');
+    console.log('🔍 DEBUG: lastChatVisit:', lastChatVisit);
+    console.log('🔍 DEBUG: user.uid:', user?.uid);
+    console.log('🔍 DEBUG: messages.length:', messages.length);
     
     const unreadCount = messages.filter(message => {
       const messageTime = message.timestamp?.toDate ? message.timestamp.toDate() : new Date(message.timestamp);
       const isAfterLastVisit = messageTime > lastChatVisit;
       const isNotOwnMessage = message.userId !== user.uid;
       
+      console.log('🔍 DEBUG: Mensagem:', {
+        messageTime: messageTime,
+        isAfterLastVisit,
+        isNotOwnMessage,
+        isUnread: isAfterLastVisit && isNotOwnMessage,
+        lastChatVisit: lastChatVisit,
+        userId: message.userId
+      });
+      
       return isAfterLastVisit && isNotOwnMessage;
     }).length;
     
+    console.log('🔍 DEBUG: unreadCount final:', unreadCount);
     return unreadCount;
   };
 
   // Função para atualizar contador de mensagens não lidas
   const updateUnreadCount = (messages) => {
+    console.log('🔍 DEBUG: updateUnreadCount chamada com', messages.length, 'mensagens');
     const count = countUnreadMessages(messages);
+    console.log('🔍 DEBUG: Definindo unreadMessagesCount para:', count);
     setUnreadMessagesCount(count);
   };
 
   // Função para limpar notificações (quando entrar no chat)
   const clearUnreadCount = () => {
+    console.log('🔍 DEBUG: clearUnreadCount chamada');
     setUnreadMessagesCount(0);
     // Marcar como visitado quando limpar
     markChatAsVisited();
@@ -354,6 +386,7 @@ export function GlobalProvider({ children }) {
     updateCurrentUserM2Coins,
     approveUser,
     rejectUser,
+    deleteUser,
     fetchAllUsers,
     // Notificações de chat (por usuário específico)
     unreadMessagesCount,
