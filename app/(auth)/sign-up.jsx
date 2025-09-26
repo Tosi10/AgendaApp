@@ -10,7 +10,7 @@ import { auth, db } from '../../lib/firebase';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
-  const [apelido, setApelido] = useState('');
+  const [nome, setNome] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,10 +32,10 @@ export default function SignUp() {
       newErrors.email = 'E-mail inválido';
     }
     
-    if (!apelido) {
-      newErrors.apelido = 'Apelido é obrigatório';
-    } else if (apelido.length < 2) {
-      newErrors.apelido = 'Apelido deve ter pelo menos 2 caracteres';
+    if (!nome) {
+      newErrors.nome = 'Nome é obrigatório';
+    } else if (nome.length < 2) {
+      newErrors.nome = 'Nome deve ter pelo menos 2 caracteres';
     }
     
     if (!password) {
@@ -65,11 +65,12 @@ export default function SignUp() {
       // Criar perfil do usuário no Firestore
       await setDoc(doc(db, 'usuarios', user.uid), {
         email: email,
-        apelido: apelido,
+        apelido: nome,
         tipoUsuario: 'aluno', // Tipo padrão
         aprovado: false, // Precisa ser aprovado pelo admin
         m2Coins: 0,
-        createdAt: new Date(),
+        dataCriacao: new Date().toISOString(),
+        ultimaAtualizacao: new Date().toISOString()
       });
       
       Alert.alert(
@@ -130,13 +131,13 @@ export default function SignUp() {
                 />
 
                 <FormField
-                  label="Apelido"
-                  placeholder="Digite seu apelido"
-                  value={apelido}
-                  onChangeText={setApelido}
+                  label="Nome"
+                  placeholder="Digite seu nome"
+                  value={nome}
+                  onChangeText={setNome}
                   autoCapitalize="words"
                   maxLength={20}
-                  error={errors.apelido}
+                  error={errors.nome}
                 />
 
                 <FormField

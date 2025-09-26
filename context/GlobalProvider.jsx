@@ -25,7 +25,7 @@ export function GlobalProvider({ children }) {
       await setDoc(userRef, {
         uid: userData.uid,
         email: userData.email,
-        apelido: userData.email.split('@')[0], // Apelido padrão baseado no email
+        apelido: userData.email.split('@')[0], // Nome padrão baseado no email
         tipoUsuario: userData.tipoUsuario || 'aluno',
         m2Coins: userData.tipoUsuario === 'admin' ? 999 : 0,
         plano: userData.tipoUsuario === 'admin' ? 'Admin Ilimitado' : 
@@ -106,22 +106,22 @@ export function GlobalProvider({ children }) {
     }
   };
 
-  // Função para atualizar apelido
-  const updateApelido = async (novoApelido) => {
+  // Função para atualizar nome
+  const updateApelido = async (novoNome) => {
     try {
       const userRef = doc(db, 'usuarios', user.uid);
       await updateDoc(userRef, {
-        apelido: novoApelido,
+        apelido: novoNome,
         ultimaAtualizacao: new Date().toISOString()
       });
       
       setUserProfile(prev => ({
         ...prev,
-        apelido: novoApelido,
+        apelido: novoNome,
         ultimaAtualizacao: new Date().toISOString()
       }));
     } catch (error) {
-      console.error('Erro ao atualizar apelido:', error);
+      console.error('Erro ao atualizar nome:', error);
       throw error;
     }
   };

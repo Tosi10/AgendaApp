@@ -35,6 +35,10 @@ export default function FormField({
             outlineStyle: 'none',
             // Remover qualquer estilo de foco padrão
             backgroundColor: 'transparent',
+            // Centralizar texto verticalmente no iOS
+            lineHeight: 20,
+            paddingVertical: 0,
+            height: '100%',
           }}
         />
       </View>

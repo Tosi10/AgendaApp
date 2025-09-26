@@ -16,9 +16,9 @@ export default function Perfil() {
   const { user, signOut, userProfile, updateApelido, updateUserM2Coins, approveUser, rejectUser, deleteUser, fetchAllUsers } = useGlobal();
   const [historicoAulas, setHistoricoAulas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showEditApelido, setShowEditApelido] = useState(false);
-  const [novoApelido, setNovoApelido] = useState('');
-  const [editandoApelido, setEditandoApelido] = useState(false);
+  const [showEditNome, setShowEditNome] = useState(false);
+  const [novoNome, setNovoNome] = useState('');
+  const [editandoNome, setEditandoNome] = useState(false);
   
   // Estados para edição de coins
   const [showEditCoins, setShowEditCoins] = useState(false);
@@ -64,7 +64,7 @@ export default function Perfil() {
     }, [])
   );
 
-  // Função para buscar informações dos usuários (apelidos)
+  // Função para buscar informações dos usuários (nomes)
   const buscarInfoUsuarios = async (emails) => {
     try {
       const usuariosInfo = [];
@@ -75,7 +75,7 @@ export default function Perfil() {
           const userData = userSnapshot.docs[0].data();
           usuariosInfo.push({
             email: email,
-            apelido: userData.apelido || email.split('@')[0], // Fallback para parte do email se não tiver apelido
+            apelido: userData.apelido || email.split('@')[0], // Fallback para parte do email se não tiver nome
             tipoUsuario: userData.tipoUsuario || 'aluno'
           });
         }
@@ -239,15 +239,25 @@ export default function Perfil() {
   useEffect(() => {
     if (!isAdmin) return;
 
+    console.log('🔍 Admin carregando lista de usuários...');
     setLoadingUsuarios(true);
     
     const q = query(collection(db, 'usuarios'), orderBy('dataCriacao', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const users = [];
+      console.log('📊 Total de usuários encontrados:', snapshot.size);
+      
       snapshot.forEach((doc) => {
-        users.push({ id: doc.id, ...doc.data() });
+        const userData = { id: doc.id, ...doc.data() };
+        console.log('👤 Usuário:', userData.email, '| Data:', userData.dataCriacao, '| Aprovado:', userData.aprovado);
+        users.push(userData);
       });
+      
+      console.log('✅ Lista de usuários atualizada:', users.length);
       setTodosUsuarios(users);
+      setLoadingUsuarios(false);
+    }, (error) => {
+      console.error('❌ Erro ao carregar usuários:', error);
       setLoadingUsuarios(false);
     });
 
@@ -302,25 +312,25 @@ export default function Perfil() {
   };
 
 
-  // Atualizar apelido
-  const atualizarApelido = async () => {
-    if (!novoApelido.trim() || novoApelido.trim().length < 2) {
-      Alert.alert('Erro', 'Apelido deve ter pelo menos 2 caracteres');
+  // Atualizar nome
+  const atualizarNome = async () => {
+    if (!novoNome.trim() || novoNome.trim().length < 2) {
+      Alert.alert('Erro', 'Nome deve ter pelo menos 2 caracteres');
       return;
     }
 
-    setEditandoApelido(true);
+    setEditandoNome(true);
     try {
-      await updateApelido(novoApelido.trim());
+      await updateApelido(novoNome.trim());
       
-      setNovoApelido('');
-      setShowEditApelido(false);
-      Alert.alert('Sucesso', 'Apelido atualizado com sucesso!');
+      setNovoNome('');
+      setShowEditNome(false);
+      Alert.alert('Sucesso', 'Nome atualizado com sucesso!');
     } catch (error) {
-      console.error('Erro ao atualizar apelido:', error);
-      Alert.alert('Erro', 'Não foi possível atualizar o apelido');
+      console.error('Erro ao atualizar nome:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar o nome');
     } finally {
-      setEditandoApelido(false);
+      setEditandoNome(false);
     }
   };
 
@@ -1108,20 +1118,20 @@ export default function Perfil() {
                   </Text>
                 </View>
                 <TouchableOpacity 
-                  onPress={() => setShowEditApelido(true)}
+                  onPress={() => setShowEditNome(true)}
                   className="bg-blue-500 rounded-lg px-4 py-2"
                 >
                   <Text className="text-white font-pbold text-sm">
-                    Editar Apelido
+                    Editar Nome
                   </Text>
                 </TouchableOpacity>
               </View>
               
               <View className="space-y-3">
-                {/* Apelido */}
+                {/* Nome */}
                 <View className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
                   <Text className="text-blue-800 font-pbold text-lg text-center mb-2">
-                    Apelido
+                    Nome
                   </Text>
                   <Text className="text-blue-600 font-pregular text-base text-center">
                     {userProfile?.apelido || 'Não definido'}
@@ -1305,13 +1315,13 @@ export default function Perfil() {
             </TouchableOpacity>
           </View>
 
-          {/* Modal para Editar Apelido */}
-          {showEditApelido && (
+          {/* Modal para Editar Nome */}
+          {showEditNome && (
             <Modal
-              visible={showEditApelido}
+              visible={showEditNome}
               transparent={true}
               animationType="slide"
-              onRequestClose={() => setShowEditApelido(false)}
+              onRequestClose={() => setShowEditNome(false)}
             >
               <KeyboardAvoidingView 
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1319,18 +1329,18 @@ export default function Perfil() {
               >
                 <View className="bg-white rounded-2xl p-6 w-full max-w-sm mx-6">
                 <Text className="text-gray-800 font-pextrabold text-2xl text-center mb-4">
-                  Editar Apelido
+                  Editar Nome
                 </Text>
                 
                 <Text className="text-gray-600 font-pregular text-base text-center mb-4">
-                  Escolha um apelido que será exibido em todo o app
+                  Escolha um nome que será exibido em todo o app
                 </Text>
                 
                 <TextInput
                   className="border border-gray-300 rounded-lg p-3 mb-4 text-center text-lg font-pbold"
-                  placeholder="Digite seu apelido"
-                  value={novoApelido}
-                  onChangeText={setNovoApelido}
+                  placeholder="Digite seu nome"
+                  value={novoNome}
+                  onChangeText={setNovoNome}
                   autoCapitalize="words"
                   maxLength={20}
                   autoFocus
@@ -1339,23 +1349,23 @@ export default function Perfil() {
                 <View className="flex-row space-x-3">
                   <TouchableOpacity 
                     onPress={() => {
-                      setShowEditApelido(false);
-                      setNovoApelido('');
+                      setShowEditNome(false);
+                      setNovoNome('');
                     }}
                     className="flex-1 bg-gray-300 rounded-lg p-3 items-center"
                   >
-                    <Text className="text-white font-pbold text-base">
+                    <Text className="text-gray-700 font-pbold text-base">
                       Cancelar
                     </Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    onPress={atualizarApelido}
-                    disabled={editandoApelido}
+                    onPress={atualizarNome}
+                    disabled={editandoNome}
                     className="flex-1 bg-blue-500 rounded-lg p-3 items-center"
                   >
                     <Text className="text-white font-pbold text-base">
-                      {editandoApelido ? 'Salvando...' : 'Salvar'}
+                      {editandoNome ? 'Salvando...' : 'Salvar'}
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { addDoc, collection, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -9,7 +10,7 @@ import { useGlobal } from '../../context/GlobalProvider';
 import { db } from '../../lib/firebase';
 
 export default function Chat() {
-  const { user, userProfile, updateUnreadCount } = useGlobal();
+  const { user, userProfile, updateUnreadCount, clearUnreadCount } = useGlobal();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -172,6 +173,8 @@ export default function Chat() {
       console.log('🔄 Aba Chat ganhou foco - Resetando para mensagens do dia');
       setHasMoreMessages(true);
       setLastMessageTimestamp(null);
+      // Limpar badge de mensagens não lidas
+      clearUnreadCount();
     }, [])
   );
 
@@ -313,6 +316,16 @@ export default function Chat() {
           </View>
         )}
 
+        {/* Botão flutuante de voltar - só aparece quando teclado está aberto */}
+        {isKeyboardVisible && (
+          <TouchableOpacity 
+            style={styles.floatingBackButton}
+            onPress={() => router.push('/(tabs)')}
+          >
+            <Ionicons name="home" size={24} color="white" />
+          </TouchableOpacity>
+        )}
+
         {/* Barra degradê amarela para azul */}
         <LinearGradient
           colors={['#FCD34D', '#3B82F6']}
@@ -328,6 +341,7 @@ export default function Chat() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          contentContainerStyle={styles.scrollContentContainer}
         >
           {messages.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -471,6 +485,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 24,
   },
+  floatingBackButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: '#2563eb',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
   titleText: {
     color: 'white',
     fontWeight: '800',
@@ -486,6 +522,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 16,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   emptyContainer: {
     flex: 1,
