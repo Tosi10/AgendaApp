@@ -57,7 +57,7 @@ export function GlobalProvider({ children }) {
         
         // CORREÇÃO: Se o perfil não tiver tipoUsuario, adicionar como 'aluno'
         if (!profileData.tipoUsuario) {
-          console.log('🔧 CORREÇÃO: Perfil sem tipoUsuario, adicionando como aluno');
+          if (__DEV__) console.log('🔧 CORREÇÃO: Perfil sem tipoUsuario, adicionando como aluno');
           const updatedProfile = {
             ...profileData,
             tipoUsuario: 'aluno',
@@ -238,7 +238,7 @@ export function GlobalProvider({ children }) {
       const userKey = `lastChatVisit_${user.uid}`;
       await AsyncStorage.setItem(userKey, now.toISOString());
     } catch (error) {
-      console.log('Erro ao salvar última visita do chat:', error);
+      if (__DEV__) console.log('Erro ao salvar última visita do chat:', error);
     }
   };
 
@@ -255,30 +255,34 @@ export function GlobalProvider({ children }) {
         setLastChatVisit(visitDate);
       }
     } catch (error) {
-      console.log('Erro ao carregar última visita do chat:', error);
+      if (__DEV__) console.log('Erro ao carregar última visita do chat:', error);
     }
   };
 
   // Função para contar mensagens não lidas por usuário específico
   const countUnreadMessages = (messages) => {
     if (!lastChatVisit || !user?.uid) {
-      console.log('🔍 DEBUG: countUnreadMessages chamada');
-      console.log('🔍 DEBUG: lastChatVisit:', lastChatVisit);
-      console.log('🔍 DEBUG: user.uid:', user?.uid);
+      if (__DEV__) {
+        console.log('🔍 DEBUG: countUnreadMessages chamada');
+        console.log('🔍 DEBUG: lastChatVisit:', lastChatVisit);
+        console.log('🔍 DEBUG: user.uid:', user?.uid);
+      }
       return 0;
     }
     
-    console.log('🔍 DEBUG: countUnreadMessages chamada');
-    console.log('🔍 DEBUG: lastChatVisit:', lastChatVisit);
-    console.log('🔍 DEBUG: user.uid:', user?.uid);
-    console.log('🔍 DEBUG: messages.length:', messages.length);
+    if (__DEV__) {
+      console.log('🔍 DEBUG: countUnreadMessages chamada');
+      console.log('🔍 DEBUG: lastChatVisit:', lastChatVisit);
+      console.log('🔍 DEBUG: user.uid:', user?.uid);
+      console.log('🔍 DEBUG: messages.length:', messages.length);
+    }
     
     const unreadCount = messages.filter(message => {
       const messageTime = message.timestamp?.toDate ? message.timestamp.toDate() : new Date(message.timestamp);
       const isAfterLastVisit = messageTime > lastChatVisit;
       const isNotOwnMessage = message.userId !== user.uid;
       
-      console.log('🔍 DEBUG: Mensagem:', {
+      if (__DEV__) console.log('🔍 DEBUG: Mensagem:', {
         messageTime: messageTime,
         isAfterLastVisit,
         isNotOwnMessage,
@@ -290,21 +294,21 @@ export function GlobalProvider({ children }) {
       return isAfterLastVisit && isNotOwnMessage;
     }).length;
     
-    console.log('🔍 DEBUG: unreadCount final:', unreadCount);
+    if (__DEV__) console.log('🔍 DEBUG: unreadCount final:', unreadCount);
     return unreadCount;
   };
 
   // Função para atualizar contador de mensagens não lidas
   const updateUnreadCount = (messages) => {
-    console.log('🔍 DEBUG: updateUnreadCount chamada com', messages.length, 'mensagens');
+    if (__DEV__) console.log('🔍 DEBUG: updateUnreadCount chamada com', messages.length, 'mensagens');
     const count = countUnreadMessages(messages);
-    console.log('🔍 DEBUG: Definindo unreadMessagesCount para:', count);
+    if (__DEV__) console.log('🔍 DEBUG: Definindo unreadMessagesCount para:', count);
     setUnreadMessagesCount(count);
   };
 
   // Função para limpar notificações (quando entrar no chat)
   const clearUnreadCount = () => {
-    console.log('🔍 DEBUG: clearUnreadCount chamada');
+    if (__DEV__) console.log('🔍 DEBUG: clearUnreadCount chamada');
     setUnreadMessagesCount(0);
     // Marcar como visitado quando limpar
     markChatAsVisited();

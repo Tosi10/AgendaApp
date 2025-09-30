@@ -225,7 +225,7 @@ export default function Agendar() {
     
     // Log para mostrar que está usando a hora correta do Brasil
     const horaBrasil = getHoraBrasil();
-    console.log('🇧🇷 Hora atual Brasil:', `${horaBrasil.hora}:${horaBrasil.minuto}`);
+    if (__DEV__) console.log('🇧🇷 Hora atual Brasil:', `${horaBrasil.hora}:${horaBrasil.minuto}`);
     
     let horarios;
     if (mostrarCalendarioPersonal) {

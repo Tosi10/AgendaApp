@@ -56,7 +56,7 @@ export default function Perfil() {
   // Resetar tab ativa quando a aba ganhar foco
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔄 Aba Perfil ganhou foco - Resetando tab para "proxima"');
+      if (__DEV__) console.log('🔄 Aba Perfil ganhou foco - Resetando tab para "proxima"');
       setTabAtiva('proxima');
       // Resetar limites de paginação
       setAulasAgendadasLimit(3);
@@ -146,17 +146,17 @@ export default function Perfil() {
       return;
     }
 
-    console.log('🔄 Carregando agendamentos para:', user.email);
+      if (__DEV__) console.log('🔄 Carregando agendamentos para:', user.email);
 
     const unsubscribe = onSnapshot(
       collection(db, 'agendamentos'),
       (snapshot) => {
         const aulasData = [];
-        console.log('📊 Total de documentos recebidos:', snapshot.size);
+        if (__DEV__) console.log('📊 Total de documentos recebidos:', snapshot.size);
         
         snapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('📄 Documento:', doc.id, 'Key:', data.key, 'Alunos:', data.alunos);
+          if (__DEV__) console.log('📄 Documento:', doc.id, 'Key:', data.key, 'Alunos:', data.alunos);
           
           if (data.key && data.alunos && data.alunos.includes(user.email)) {
             // Extrair data e horário da chave
@@ -177,12 +177,14 @@ export default function Perfil() {
               dataBase.setHours(parseInt(hora), parseInt(minuto), 0, 0);
               dataCompleta = dataBase;
               
-              console.log('🔧 Construindo data da aula:');
-              console.log('🔧 Data string:', dataStr);
-              console.log('🔧 Horário string:', horario);
-              console.log('🔧 Data base parseada:', dataBase.toLocaleDateString());
-              console.log('🔧 Data final com horário:', dataCompleta.toLocaleString());
-              console.log('🔧 Data construída (timestamp):', dataCompleta.getTime());
+              if (__DEV__) {
+                console.log('🔧 Construindo data da aula:');
+                console.log('🔧 Data string:', dataStr);
+                console.log('🔧 Horário string:', horario);
+                console.log('🔧 Data base parseada:', dataBase.toLocaleDateString());
+                console.log('🔧 Data final com horário:', dataCompleta.toLocaleString());
+                console.log('🔧 Data construída (timestamp):', dataCompleta.getTime());
+              }
               
               // Verificar se a data foi construída corretamente
               if (isNaN(dataCompleta.getTime())) {
@@ -194,8 +196,10 @@ export default function Perfil() {
               const agora = new Date();
               const status = dataCompleta > agora ? 'agendada' : 'realizada';
               
-              console.log('🔧 Status da aula:', status);
-              console.log('🔧 Data da aula vs agora:', dataCompleta.toLocaleString(), 'vs', agora.toLocaleString());
+              if (__DEV__) {
+                console.log('🔧 Status da aula:', status);
+                console.log('🔧 Data da aula vs agora:', dataCompleta.toLocaleString(), 'vs', agora.toLocaleString());
+              }
               
               const aula = {
                 id: doc.id,
@@ -207,7 +211,7 @@ export default function Perfil() {
               };
               
               aulasData.push(aula);
-              console.log('✅ Aula adicionada:', aula);
+              if (__DEV__) console.log('✅ Aula adicionada:', aula);
               
             } catch (error) {
               console.error('❌ ERRO ao processar aula:', error);
@@ -219,9 +223,11 @@ export default function Perfil() {
           }
         });
         
-        console.log('🎯 Total de aulas encontradas para o usuário:', aulasData.length);
-        console.log('📅 Aulas agendadas:', aulasData.filter(a => a.status === 'agendada').length);
-        console.log('✅ Aulas realizadas:', aulasData.filter(a => a.status === 'realizada').length);
+        if (__DEV__) {
+          console.log('🎯 Total de aulas encontradas para o usuário:', aulasData.length);
+          console.log('📅 Aulas agendadas:', aulasData.filter(a => a.status === 'agendada').length);
+          console.log('✅ Aulas realizadas:', aulasData.filter(a => a.status === 'realizada').length);
+        }
         
         setHistoricoAulas(aulasData);
         setLoading(false);
@@ -239,21 +245,21 @@ export default function Perfil() {
   useEffect(() => {
     if (!isAdmin) return;
 
-    console.log('🔍 Admin carregando lista de usuários...');
+    if (__DEV__) console.log('🔍 Admin carregando lista de usuários...');
     setLoadingUsuarios(true);
     
     const q = query(collection(db, 'usuarios'), orderBy('dataCriacao', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const users = [];
-      console.log('📊 Total de usuários encontrados:', snapshot.size);
+      if (__DEV__) console.log('📊 Total de usuários encontrados:', snapshot.size);
       
       snapshot.forEach((doc) => {
         const userData = { id: doc.id, ...doc.data() };
-        console.log('👤 Usuário:', userData.email, '| Data:', userData.dataCriacao, '| Aprovado:', userData.aprovado);
+        if (__DEV__) console.log('👤 Usuário:', userData.email, '| Data:', userData.dataCriacao, '| Aprovado:', userData.aprovado);
         users.push(userData);
       });
       
-      console.log('✅ Lista de usuários atualizada:', users.length);
+      if (__DEV__) console.log('✅ Lista de usuários atualizada:', users.length);
       setTodosUsuarios(users);
       setLoadingUsuarios(false);
     }, (error) => {
@@ -652,10 +658,12 @@ export default function Perfil() {
               {(() => {
                 if (tabAtiva === 'proxima') {
                   // Mostrar próxima aula
-                  console.log('🔍 Calculando próxima aula...');
-                  console.log('📊 historicoAulas:', historicoAulas);
-                  console.log('📅 Aulas agendadas:', historicoAulas.filter(aula => aula.status === 'agendada'));
-                  console.log('⏰ Aulas futuras:', historicoAulas.filter(aula => aula.status === 'agendada' && aula.data > new Date()));
+                  if (__DEV__) {
+                    console.log('🔍 Calculando próxima aula...');
+                    console.log('📊 historicoAulas:', historicoAulas);
+                    console.log('📅 Aulas agendadas:', historicoAulas.filter(aula => aula.status === 'agendada'));
+                    console.log('⏰ Aulas futuras:', historicoAulas.filter(aula => aula.status === 'agendada' && aula.data > new Date()));
+                  }
                   
                   const proximaAula = historicoAulas
                     .filter(aula => {
@@ -664,18 +672,20 @@ export default function Perfil() {
                       
                       // Aula é futura se a data/hora for maior que agora
                       const isFutura = dataAula > agora;
-                      console.log(`📅 Aula ${aula.horario} em ${formatarData(aula.data)} às ${aula.horario}: ${isFutura ? 'FUTURA' : 'PASSADA'}`);
-                      console.log(`📅 Data da aula: ${dataAula.toLocaleString()}`);
-                      console.log(`📅 Agora: ${agora.toLocaleString()}`);
+                      if (__DEV__) {
+                        console.log(`📅 Aula ${aula.horario} em ${formatarData(aula.data)} às ${aula.horario}: ${isFutura ? 'FUTURA' : 'PASSADA'}`);
+                        console.log(`📅 Data da aula: ${dataAula.toLocaleString()}`);
+                        console.log(`📅 Agora: ${agora.toLocaleString()}`);
+                      }
                       
                       return aula.status === 'agendada' && isFutura;
                     })
                     .sort((a, b) => new Date(a.data) - new Date(b.data))[0];
 
-                  console.log('🎯 Próxima aula encontrada:', proximaAula);
+                  if (__DEV__) console.log('🎯 Próxima aula encontrada:', proximaAula);
 
                   if (!proximaAula) {
-                    console.log('❌ Nenhuma próxima aula encontrada');
+                    if (__DEV__) console.log('❌ Nenhuma próxima aula encontrada');
                     return (
                       <View className="bg-gray-50 rounded-xl p-8 items-center">
                         <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />

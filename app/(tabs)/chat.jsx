@@ -170,7 +170,7 @@ export default function Chat() {
   // Reset quando a aba ganhar foco (igual ao perfil)
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔄 Aba Chat ganhou foco - Resetando para mensagens do dia');
+      if (__DEV__) console.log('🔄 Aba Chat ganhou foco - Resetando para mensagens do dia');
       setHasMoreMessages(true);
       setLastMessageTimestamp(null);
       // Limpar badge de mensagens não lidas
