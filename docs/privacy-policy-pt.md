@@ -10,10 +10,15 @@ Esta Política descreve como o aplicativo “M2 Academia” coleta, usa, armazen
 
 ### 2. Quais dados coletamos
 - **E-mail**: coletado no cadastro e no login para criação e autenticação de conta.
-- **Nome/Apelido**: informado por você para exibição no app (ex.: chat e perfil).
-- **Dados de uso básicos**: registros técnicos mínimos gerados pelos serviços de infraestrutura (ex.: logs do Firebase) estritamente para operação segura e diagnóstico de erros.
+- **Nome**: informado por você para exibição no app (ex.: chat e perfil).
+- **Conteúdo de usuário (chat)**: mensagens enviadas dentro do app para funcionamento do chat em grupo.
+- **Identificadores técnicos**:
+  - **ID de usuário (Firebase Auth UID)**: identificador exclusivo da sua conta para autenticação e controle de acesso.
+  - **ID de instalação/dispositivo (Firebase Installation ID/Device ID)**: identificador técnico da instalação do app usado para confiabilidade, segurança e métricas agregadas.
+- **Dados de uso**: eventos básicos de uso e navegação (ex.: aberturas de tela, tempo de sessão) para análise interna e melhoria do produto.
+- **Dados de diagnóstico**: informações de falhas (crash logs) e desempenho (ex.: tempo de inicialização) para detecção e correção de erros.
 
-Não coletamos dados de localização, contatos, fotos, câmera ou dados sensíveis sem ação explícita do usuário. Não realizamos rastreamento para publicidade e não integramos SDKs de anúncios.
+Não coletamos dados de localização, contatos, fotos, câmera, microfone, saúde, pagamentos ou dados sensíveis. **Não realizamos rastreamento para fins de publicidade** e não integramos SDKs de anúncios.
 
 ### 3. Finalidades do tratamento
 - Criar e autenticar sua conta (login por e-mail).

@@ -1,4 +1,6 @@
-import { Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { icons } from '../constants';
 
 export default function FormField({ 
   label, 
@@ -10,6 +12,7 @@ export default function FormField({
   autoCapitalize = 'sentences',
   error = null
 }) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <View className="mb-2">
       {label && (
@@ -24,7 +27,7 @@ export default function FormField({
           placeholderTextColor="#9CA3AF"
           value={value}
           onChangeText={onChangeText}
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={secureTextEntry && !showPassword}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           multiline={false}
@@ -41,6 +44,20 @@ export default function FormField({
             height: '100%',
           }}
         />
+        
+        {/* Ícone de visibilidade para campos de senha */}
+        {secureTextEntry && (
+          <TouchableOpacity 
+            onPress={() => setShowPassword(!showPassword)}
+            className="ml-2 p-1"
+          >
+            <Image
+              source={showPassword ? icons.eyeHide : icons.eye}
+              style={{ width: 20, height: 20 }}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        )}
       </View>
       {error && (
         <Text className="text-red-500 font-medium text-sm mt-1">

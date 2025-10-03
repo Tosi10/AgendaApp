@@ -488,6 +488,52 @@ export default function Perfil() {
     }
   };
 
+  // Função para usuário deletar sua própria conta
+  const handleDeleteOwnAccount = async () => {
+    Alert.alert(
+      'Excluir Conta',
+      'Tem certeza que deseja excluir sua conta permanentemente? Todos os seus dados serão removidos e você não poderá recuperar esta conta.',
+      [
+        {
+
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Excluir Conta',
+          style: 'destructive',
+          onPress: async () => {
+            Alert.alert(
+              'Confirmar Exclusão',
+              'Esta é sua última chance. Tem certeza que deseja excluir sua conta?',
+              [
+                {
+                  text: 'Cancelar',
+                  style: 'cancel'
+                },
+                {
+                  text: 'Sim, excluir',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      // Chamar função de exclusão do contexto passando o ID do próprio usuário
+                      await deleteUser(user.uid);
+                      Alert.alert('Conta Excluída', 'Sua conta foi excluída com sucesso.');
+                      signOut(); // Fazer logout após exclusão
+                    } catch (error) {
+                      console.error('Erro ao excluir conta:', error);
+                      Alert.alert('Erro', 'Não foi possível excluir sua conta. Tente novamente.');
+                    }
+                  }
+                }
+              ]
+            );
+          }
+        }
+      ]
+    );
+  };
+
   const salvarNovosCoins = async () => {
     if (!usuarioEditandoCoins) return;
     
@@ -1313,17 +1359,52 @@ export default function Perfil() {
             </View>
           </View>
 
-          {/* Botão de Logout */}
-          <View className="px-6 py-6 bg-gray-50">
-            <TouchableOpacity
-              onPress={signOut}
-              className="bg-red-500 rounded-xl p-4 items-center"
-            >
-              <Text className="text-white font-pbold text-lg">
-                Sair da Conta
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* Botão de Logout e Excluir Conta - apenas para usuários comuns */}
+          {!isAdmin && (
+            <View className="px-6 p-6 bg-gray-50 space-y-4">
+              {/* Botão de Logout - MAIOR E PRINCIPAL */}
+              <TouchableOpacity
+                onPress={signOut}
+                className="bg-blue-600 rounded-xl p-5 items-center border-2 border-blue-700 shadow-lg"
+              >
+                <Text className="text-white font-pextrabold text-xl">
+                  🚪 Sair da Conta
+                </Text>
+                <Text className="text-blue-200 font-pregular text-sm text-center mt-1">
+                  Fazer logout da sua conta
+                </Text>
+              </TouchableOpacity>
+              
+              {/* Botão Excluir Conta - MENOR E MENOS VISÍVEL */}
+              <View className="items-center">
+                <TouchableOpacity
+                  onPress={handleDeleteOwnAccount}
+                  className="bg-red-500/80 rounded-lg p-2 items-center border border-red-600"
+                >
+                  <Text className="text-white font-pregular text-sm">
+                    Excluir Conta
+                  </Text>
+                </TouchableOpacity>
+                <Text className="text-gray-500 font-pregular text-xs text-center mt-1">
+                  Exclusão permanente
+                </Text>
+              </View>
+            </View>
+          )}
+          
+          {/* Botão de Logout para admin */}
+          {isAdmin && (
+            <View className="px-6 py-6 bg-gray-50">
+              <TouchableOpacity
+                onPress={signOut}
+                className="bg-red-500 rounded-xl p-4 items-center"
+              >
+                <Text className="text-white font-pbold text-lg">
+                  Sair da Conta
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Modal para Editar Nome */}
           {showEditNome && (
