@@ -2,7 +2,7 @@
   "expo": {
     "name": "M2 Academia",
     "slug": "agendaapp",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/m2chat.png",
     "userInterfaceStyle": "light",
@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "icon": "./assets/images/m2chat.png",
       "package": "com.m2academia.agendaapp",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "Este aplicativo precisa de acesso à sua câmera para permitir que você tire fotos para o perfil.",
         "NSPhotoLibraryUsageDescription": "Este aplicativo precisa de acesso à sua galeria de fotos para permitir que você selecione imagens para o perfil.",

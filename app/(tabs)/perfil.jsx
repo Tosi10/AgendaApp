@@ -1392,17 +1392,36 @@ export default function Perfil() {
             </View>
           )}
           
-          {/* Botão de Logout para admin */}
+          {/* Botões para admin: Logout e Excluir Conta (também disponível para aprovação da Apple) */}
           {isAdmin && (
-            <View className="px-6 py-6 bg-gray-50">
+            <View className="px-6 py-6 bg-gray-50 space-y-4">
+              {/* Botão de Logout - consistente com alunos (azul, destaque) */}
               <TouchableOpacity
                 onPress={signOut}
-                className="bg-red-500 rounded-xl p-4 items-center"
+                className="bg-blue-600 rounded-xl p-5 items-center border-2 border-blue-700 shadow-lg"
               >
-                <Text className="text-white font-pbold text-lg">
-                  Sair da Conta
+                <Text className="text-white font-pextrabold text-xl">
+                  🚪 Sair da Conta
+                </Text>
+                <Text className="text-blue-200 font-pregular text-sm text-center mt-1">
+                  Fazer logout da sua conta
                 </Text>
               </TouchableOpacity>
+
+              {/* Botão Excluir Conta para ADMIN também */}
+              <View className="items-center">
+                <TouchableOpacity
+                  onPress={handleDeleteOwnAccount}
+                  className="bg-red-500/80 rounded-lg p-2 items-center border border-red-600"
+                >
+                  <Text className="text-white font-pregular text-sm">
+                    Excluir Conta
+                  </Text>
+                </TouchableOpacity>
+                <Text className="text-gray-500 font-pregular text-xs text-center mt-1">
+                  Exclusão permanente
+                </Text>
+              </View>
             </View>
           )}
 
