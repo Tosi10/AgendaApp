@@ -19,7 +19,7 @@ export default function Agendar() {
   const [loading, setLoading] = useState(true);
   const [apelidosUsuarios, setApelidosUsuarios] = useState({}); // Estado para armazenar apelidos
 
-  // Estado para seleção de calendário (apenas para admins)
+  // Estado para seleção de calendário (para admins e alunos personal)
   const [calendarioSelecionado, setCalendarioSelecionado] = useState('alunos');
 
   // Verificar se o usuário pode agendar
@@ -28,7 +28,8 @@ export default function Agendar() {
   const isAdmin = userProfile?.tipoUsuario === 'admin';
   
   // Determinar qual calendário mostrar
-  const mostrarCalendarioPersonal = isPersonalTraining || (isAdmin && calendarioSelecionado === 'personal');
+  // Alunos personal podem alternar entre os 2 calendários, admins também
+  const mostrarCalendarioPersonal = (isPersonalTraining && calendarioSelecionado === 'personal') || (isAdmin && calendarioSelecionado === 'personal');
 
   // Carregar agendamentos do Firestore
   useEffect(() => {
@@ -445,8 +446,8 @@ export default function Agendar() {
 
             {/* Navegação de semanas movida para as laterais dos dias (sem faixa de texto) */}
             
-            {/* Seletor de Calendário para Admins */}
-            {isAdmin && (
+            {/* Seletor de Calendário para Admins e Alunos Personal */}
+            {(isAdmin || isPersonalTraining) && (
               <View className="bg-blue-500 rounded-lg p-3 mb-4">
                 <Text className="text-white font-pbold text-sm text-center mb-2">
                   Visualizar Calendário:
@@ -601,7 +602,6 @@ export default function Agendar() {
                           const alunos = agendamentos[key] || [];
                           const isOcupado = alunos.length > 0;
                           const isPassado = isClassPassed(selectedDay, horario);
-                          const userAgendado = isUserAgendado(selectedDay, horario);
                           
                           return (
                             <TouchableOpacity
@@ -645,9 +645,11 @@ export default function Agendar() {
                         
                         if (alunos.length === 0) return null; // Só mostrar cards para horários ocupados
                         
-                        // Para usuários personal, mostrar apenas se eles mesmos estão agendados
-                        if (isPersonalTraining && !alunos.includes(user?.email)) {
-                          return null; // Não mostrar cards de outros alunos para personal
+                        // Para calendário de personal, manter privacidade entre alunos
+                        // EXCEÇÃO: admins podem ver todos os agendamentos
+                        // Para calendário de alunos, todos podem ver todos os agendamentos
+                        if (!isAdmin && mostrarCalendarioPersonal && !alunos.includes(user?.email)) {
+                          return null; // No calendário personal, não mostrar cards de outros alunos
                         }
                         
                         return (
@@ -672,8 +674,10 @@ export default function Agendar() {
                                 {isPersonalTraining ? 'Seu Agendamento:' : 'Aluno Agendado:'}
                               </Text>
                               {alunos.map((aluno, index) => {
-                                // Para personal, mostrar apenas se for o próprio usuário
-                                if (isPersonalTraining && aluno !== user?.email) {
+                                // Para calendário de personal, manter privacidade entre alunos
+                                // EXCEÇÃO: admins podem ver todos os alunos
+                                // Para calendário de alunos, todos podem ver todos os alunos
+                                if (!isAdmin && mostrarCalendarioPersonal && aluno !== user?.email) {
                                   return null;
                                 }
                                 
@@ -839,28 +843,37 @@ export default function Agendar() {
 
                           {/* Lista de alunos */}
                           <View className="space-y-2">
-                            {alunos.map((aluno, index) => (
-                              <View key={index} className="flex-row items-center bg-gray-50 p-3 rounded-lg">
-                                <Ionicons 
-                                  name="person" 
-                                  size={16} 
-                                  color={aluno === user?.email ? '#3b82f6' : '#6b7280'} 
-                                />
-                                <Text className={`ml-2 font-pregular ${
-                                  aluno === user?.email ? 'text-blue-600 font-pbold' : 'text-gray-800'
-                                }`}>
-                                  {(() => {
-                                    if (aluno === user?.email) {
-                                      const apelido = userProfile?.apelido || user?.displayName || user?.email?.split('@')[0] || 'Você';
-                                      return apelido;
-                                    } else {
-                                      const apelido = apelidosUsuarios[aluno] || aluno.split('@')[0];
-                                      return apelido;
-                                    }
-                                  })()}
-                                </Text>
-                              </View>
-                            ))}
+                            {alunos.map((aluno, index) => {
+                              // Para calendário de personal, manter privacidade entre alunos
+                              // EXCEÇÃO: admins podem ver todos os alunos
+                              // Para calendário de alunos, todos podem ver todos os alunos
+                              if (!isAdmin && mostrarCalendarioPersonal && aluno !== user?.email) {
+                                return null;
+                              }
+                              
+                              return (
+                                <View key={index} className="flex-row items-center bg-gray-50 p-3 rounded-lg">
+                                  <Ionicons 
+                                    name="person" 
+                                    size={16} 
+                                    color={aluno === user?.email ? '#3b82f6' : '#6b7280'} 
+                                  />
+                                  <Text className={`ml-2 font-pregular ${
+                                    aluno === user?.email ? 'text-blue-600 font-pbold' : 'text-gray-800'
+                                  }`}>
+                                    {(() => {
+                                      if (aluno === user?.email) {
+                                        const apelido = userProfile?.apelido || user?.displayName || user?.email?.split('@')[0] || 'Você';
+                                        return apelido;
+                                      } else {
+                                        const apelido = apelidosUsuarios[aluno] || aluno.split('@')[0];
+                                        return apelido;
+                                      }
+                                    })()}
+                                  </Text>
+                                </View>
+                              );
+                            })}
                             
                             {alunos.length === 0 && (
                               <Text className="text-gray-400 font-pregular text-center py-4">
