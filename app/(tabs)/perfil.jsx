@@ -420,17 +420,22 @@ export default function Perfil() {
       // Calcular M2 Coins baseado no plano (1 aula = 1 M2 Coin)
       const m2Coins = plano.aulasPorMes;
       
+      // Determinar tipo de usuário baseado no plano
+      // Se é Personal Training, mudar tipoUsuario para 'personal'
+      const tipoUsuario = plano.id === 'personal-training' ? 'personal' : 'aluno';
+      
       await updateDoc(userRef, {
         plano: plano.id,
         planoNome: plano.nome,
         m2Coins: m2Coins,
+        tipoUsuario: tipoUsuario, // Atualizar o tipo de usuário baseado no plano
         dataAtualizacaoPlano: new Date(),
         status: 'ativo'
       });
       
       setShowPlanoModal(false);
       setUsuarioEditandoPlano(null);
-      Alert.alert('Sucesso', `Plano "${plano.nome}" aplicado! Usuário recebeu ${m2Coins} M2 Coins.`);
+      Alert.alert('Sucesso', `Plano "${plano.nome}" aplicado! Usuário recebeu ${m2Coins} M2 Coins.${tipoUsuario === 'personal' ? ' Tipo de usuário mudou para Personal.' : ''}`);
     } catch (error) {
       console.error('Erro ao aplicar plano:', error);
       Alert.alert('Erro', 'Não foi possível aplicar o plano');

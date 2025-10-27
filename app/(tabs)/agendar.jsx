@@ -31,6 +31,13 @@ export default function Agendar() {
   // Alunos personal podem alternar entre os 2 calendários, admins também
   const mostrarCalendarioPersonal = (isPersonalTraining && calendarioSelecionado === 'personal') || (isAdmin && calendarioSelecionado === 'personal');
 
+  // Ajustar calendário inicial para personal (deve abrir no calendário personal por padrão)
+  useEffect(() => {
+    if (isPersonalTraining && calendarioSelecionado === 'alunos') {
+      setCalendarioSelecionado('personal');
+    }
+  }, [isPersonalTraining]);
+
   // Carregar agendamentos do Firestore
   useEffect(() => {
     if (!user) return;
@@ -310,12 +317,9 @@ export default function Agendar() {
       }
       
       // Verificar limite baseado no tipo de calendário
-      const limiteAlunos = mostrarCalendarioPersonal ? 1 : 8; // Personal: 1 aluno, Alunos: 8 alunos
+      const limiteAlunos = 8; // Personal e Alunos: 8 alunos
       if (novosAgendamentos[key].length >= limiteAlunos) {
-        const mensagem = mostrarCalendarioPersonal 
-          ? 'Este horário já está ocupado por outro aluno.' 
-          : 'Este horário já está com 8 alunos.';
-        Alert.alert('Limite Atingido', mensagem);
+        Alert.alert('Limite Atingido', 'Este horário já está com 8 alunos.');
         return;
       }
       
@@ -602,6 +606,7 @@ export default function Agendar() {
                           const alunos = agendamentos[key] || [];
                           const isOcupado = alunos.length > 0;
                           const isPassado = isClassPassed(selectedDay, horario);
+                          const userAgendado = isUserAgendado(selectedDay, horario);
                           
                           return (
                             <TouchableOpacity
@@ -616,9 +621,11 @@ export default function Agendar() {
                               className={`rounded-lg border-2 w-20 h-16 items-center justify-center m-1 ${
                                 isPassado
                                   ? 'bg-gray-400 border-gray-400' // Horário passado
-                                  : isOcupado
-                                    ? 'bg-purple-500 border-purple-500' // Ocupado
-                                    : 'bg-green-500 border-green-500' // Disponível
+                                  : userAgendado
+                                    ? 'bg-purple-500 border-purple-500' // O usuário está agendado
+                                    : isOcupado
+                                      ? 'bg-blue-300 border-blue-400' // Outros estão agendados
+                                      : 'bg-green-500 border-green-500' // Disponível
                               }`}
                               disabled={isPassado}
                               activeOpacity={0.8}
@@ -631,7 +638,7 @@ export default function Agendar() {
                               <Text className={`font-pregular text-xs ${
                                 isPassado ? 'text-gray-600' : 'text-black'
                               }`}>
-                                {isPassado ? 'Passado' : isOcupado ? 'Ocupado' : 'Disponível'}
+                                {isPassado ? 'Passado' : userAgendado ? 'Seu horário' : isOcupado ? `${alunos.length}/8` : 'Disponível'}
                               </Text>
                             </TouchableOpacity>
                           );
@@ -645,13 +652,6 @@ export default function Agendar() {
                         
                         if (alunos.length === 0) return null; // Só mostrar cards para horários ocupados
                         
-                        // Para calendário de personal, manter privacidade entre alunos
-                        // EXCEÇÃO: admins podem ver todos os agendamentos
-                        // Para calendário de alunos, todos podem ver todos os agendamentos
-                        if (!isAdmin && mostrarCalendarioPersonal && !alunos.includes(user?.email)) {
-                          return null; // No calendário personal, não mostrar cards de outros alunos
-                        }
-                        
                         return (
                           <View key={horario} className="bg-white rounded-xl p-4 shadow-lg border-2 border-purple-500">
                             <View className="flex-row items-center justify-between mb-3">
@@ -663,7 +663,7 @@ export default function Agendar() {
                               </View>
                               <View className="bg-purple-100 rounded-full px-3 py-1">
                                 <Text className="text-purple-700 font-pbold text-sm">
-                                  {isPersonalTraining ? 'Seu Horário' : 'Ocupado'}
+                                  {alunos.length}/8 alunos
                                 </Text>
                               </View>
                             </View>
@@ -671,16 +671,9 @@ export default function Agendar() {
                             {/* Informações do aluno agendado */}
                             <View className="bg-purple-50 rounded-lg p-3 border border-purple-200">
                               <Text className="text-purple-800 font-pbold text-sm mb-2">
-                                {isPersonalTraining ? 'Seu Agendamento:' : 'Aluno Agendado:'}
+                                Alunos Agendados:
                               </Text>
                               {alunos.map((aluno, index) => {
-                                // Para calendário de personal, manter privacidade entre alunos
-                                // EXCEÇÃO: admins podem ver todos os alunos
-                                // Para calendário de alunos, todos podem ver todos os alunos
-                                if (!isAdmin && mostrarCalendarioPersonal && aluno !== user?.email) {
-                                  return null;
-                                }
-                                
                                 return (
                                   <View key={index} className="flex-row items-center bg-white p-3 rounded-lg border border-purple-300">
                                     <Ionicons 
