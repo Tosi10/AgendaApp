@@ -34,6 +34,7 @@ export const DIAS_SEMANA = {
 
 export const HORARIOS_PERSONAL_TRAINING = {
   segunda: [
+    { hora: '05:30', disponivel: true },
     { hora: '08:00', disponivel: true },
     { hora: '10:00', disponivel: true },
     { hora: '11:00', disponivel: true },
@@ -43,6 +44,7 @@ export const HORARIOS_PERSONAL_TRAINING = {
     { hora: '20:00', disponivel: true }
   ],
   terca: [
+    { hora: '05:30', disponivel: true },
     { hora: '06:30', disponivel: true },
     { hora: '07:30', disponivel: true },
     { hora: '08:30', disponivel: true },
@@ -54,6 +56,7 @@ export const HORARIOS_PERSONAL_TRAINING = {
     { hora: '20:00', disponivel: true }
   ],
   quarta: [
+    { hora: '05:30', disponivel: true },
     { hora: '08:00', disponivel: true },
     { hora: '10:00', disponivel: true },
     { hora: '11:00', disponivel: true },
@@ -64,6 +67,7 @@ export const HORARIOS_PERSONAL_TRAINING = {
     { hora: '20:00', disponivel: true }
   ],
   quinta: [
+    { hora: '05:30', disponivel: true },
     { hora: '06:30', disponivel: true },
     { hora: '07:30', disponivel: true },
     { hora: '08:30', disponivel: true },
@@ -75,6 +79,7 @@ export const HORARIOS_PERSONAL_TRAINING = {
     { hora: '20:00', disponivel: true }
   ],
   sexta: [
+    { hora: '05:30', disponivel: true },
     { hora: '08:00', disponivel: true },
     { hora: '10:00', disponivel: true },
     { hora: '11:00', disponivel: true },

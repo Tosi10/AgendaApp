@@ -317,9 +317,12 @@ export default function Agendar() {
       }
       
       // Verificar limite baseado no tipo de calendário
-      const limiteAlunos = 8; // Personal e Alunos: 8 alunos
+      const limiteAlunos = mostrarCalendarioPersonal ? 6 : 8; // Personal: 6 alunos, Alunos: 8 alunos
       if (novosAgendamentos[key].length >= limiteAlunos) {
-        Alert.alert('Limite Atingido', 'Este horário já está com 8 alunos.');
+        const mensagem = mostrarCalendarioPersonal 
+          ? 'Este horário já está com 6 alunos.' 
+          : 'Este horário já está com 8 alunos.';
+        Alert.alert('Limite Atingido', mensagem);
         return;
       }
       
@@ -638,7 +641,7 @@ export default function Agendar() {
                               <Text className={`font-pregular text-xs ${
                                 isPassado ? 'text-gray-600' : 'text-black'
                               }`}>
-                                {isPassado ? 'Passado' : userAgendado ? 'Seu horário' : isOcupado ? `${alunos.length}/8` : 'Disponível'}
+                                {isPassado ? 'Passado' : userAgendado ? 'Seu horário' : isOcupado ? `${alunos.length}/6` : 'Disponível'}
                               </Text>
                             </TouchableOpacity>
                           );
@@ -663,7 +666,7 @@ export default function Agendar() {
                               </View>
                               <View className="bg-purple-100 rounded-full px-3 py-1">
                                 <Text className="text-purple-700 font-pbold text-sm">
-                                  {alunos.length}/8 alunos
+                                  {alunos.length}/6 alunos
                                 </Text>
                               </View>
                             </View>
