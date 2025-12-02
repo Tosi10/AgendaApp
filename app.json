@@ -33,7 +33,9 @@
         "backgroundColor": "#1E40AF"
       },
       "icon": "./assets/images/m2chat.png",
-      "package": "com.m2academia.agendaapp"
+      "package": "com.m2academia.agendaapp",
+      "versionCode": 4,
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/images/m2chat.png"

@@ -1,16 +1,41 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
 import { FlatList, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { INFO_EMPRESA } from '../../constants/Empresa';
 import { useGlobal } from '../../context/GlobalProvider';
+import { db } from '../../lib/firebase';
+import LoadingScreen from '../../components/LoadingScreen';
 
 export default function Home() {
   const { user, userProfile } = useGlobal();
+  const [planos, setPlanos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const isAdmin = userProfile?.tipoUsuario === 'admin';
 
   // Função para abrir WhatsApp com mensagem personalizada
   const abrirWhatsApp = (plano) => {
     const numeroWhatsApp = INFO_EMPRESA.whatsapp.replace(/\D/g, ''); // Remove caracteres não numéricos
-    const mensagem = `Olá! 👋 Gostaria de saber mais sobre o plano "${plano.nome}" da M2 Academia de Futebol! ⚽️`;
+    
+    // Construir mensagem com detalhes do plano
+    let mensagem = `Olá! 👋\n\nGostaria de saber mais sobre o plano *"${plano.nome}"* da M2 Academia de Futebol! ⚽️\n\n`;
+    mensagem += `📋 *Detalhes do Plano:*\n`;
+    mensagem += `• ${plano.frequencia}\n`;
+    mensagem += `• ${plano.aulas}\n`;
+    mensagem += `• ${plano.reposicao}\n\n`;
+    
+    // Adicionar valores disponíveis
+    if (plano.valores && plano.valores.length > 0) {
+      mensagem += `💰 *Valores:*\n`;
+      plano.valores.forEach((valor) => {
+        mensagem += `• ${valor.tipo}: R$ ${valor.valor} (${valor.forma})\n`;
+      });
+    }
+    
+    mensagem += `\nGostaria de mais informações! 😊`;
     
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
     
@@ -21,88 +46,35 @@ export default function Home() {
     });
   };
 
-  // Dados dos planos
-  const planos = [
-    {
-      id: '1',
-      nome: 'Quem corre é a bola⚽️',
-      frequencia: '1x na semana',
-      aulas: '4 aulas no mês',
-      reposicao: '❌ Sem direito a reposição',
-      valores: [
-        { tipo: 'Mensal', valor: '135,90', forma: 'Dinheiro ou PIX' }
-      ],
-      cor: '#3B82F6',
-      corGradiente: 'from-blue-500 to-blue-600',
-      destaque: false
-    },
-    {
-      id: '2',
-      nome: 'Toca e passa⚽️',
-      frequencia: '2x na semana',
-      aulas: '8 aulas no mês',
-      reposicao: '❌ Sem direito a reposição',
-      valores: [
-        { tipo: 'Mensal', valor: '199,90', forma: 'Dinheiro ou PIX' },
-        { tipo: 'Trimestral', valor: '179,90', forma: '3x no cartão' },
-        { tipo: 'À vista', valor: '480,00', forma: 'À vista' }
-      ],
-      cor: '#10B981',
-      corGradiente: 'from-green-500 to-emerald-600',
-      destaque: false
-    },
-    {
-      id: '3',
-      nome: 'Jogou onde fera⚽️',
-      frequencia: '3x na semana',
-      aulas: '12 aulas no mês',
-      reposicao: '❌ Sem direito a reposição',
-      valores: [
-        { tipo: 'Mensal', valor: '239,90', forma: 'Dinheiro ou PIX' },
-        { tipo: 'Trimestral', valor: '219,90', forma: '3x no cartão' },
-        { tipo: 'À vista', valor: '580,00', forma: 'Plano trimestral' }
-      ],
-      cor: '#F59E0B',
-      corGradiente: 'from-yellow-500 to-orange-500',
-      destaque: false
-    },
-    {
-      id: '4',
-      nome: 'Segura Juvenil⚽️',
-      frequencia: '4x na semana',
-      aulas: '16 aulas no mês',
-      reposicao: '❌ Sem direito a reposição',
-      valores: [
-        { tipo: 'Mensal', valor: '259,90', forma: 'Dinheiro ou PIX' },
-        { tipo: 'Trimestral', valor: '239,90', forma: '3x no cartão' },
-        { tipo: 'À vista', valor: '640,00', forma: 'Trimestral à vista' }
-      ],
-      cor: '#EF4444',
-      corGradiente: 'from-red-500 to-pink-500',
-      destaque: true
-    },
-    {
-      id: '5',
-      nome: 'Respeita a minha História⚽️',
-      frequencia: '5x na semana',
-      aulas: '20 aulas no mês',
-      reposicao: '❌ Sem direito a reposição',
-      valores: [
-        { tipo: 'Mensal', valor: '279,90', forma: 'Dinheiro ou PIX' },
-        { tipo: 'Trimestral', valor: '259,90', forma: '3x no cartão' },
-        { tipo: 'À vista', valor: '700,00', forma: 'À vista' }
-      ],
-      cor: '#8B5CF6',
-      corGradiente: 'from-purple-500 to-violet-600',
-      destaque: false
-    }
-  ];
+  // Carregar planos do Firebase
+  useEffect(() => {
+    const q = query(collection(db, 'planos'), orderBy('ordem', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const planosData = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        planosData.push({
+          id: doc.id,
+          ...data,
+          // Garantir que valores seja um array
+          valores: data.valores || []
+        });
+      });
+      setPlanos(planosData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Erro ao carregar planos:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const renderPlano = ({ item }) => (
     <TouchableOpacity 
       className={`rounded-2xl p-4 mx-2 min-w-[280] ${item.destaque ? 'border-4 border-yellow-400 shadow-2xl' : 'border-2 shadow-lg'}`} 
       style={{ backgroundColor: item.cor + '60', borderColor: item.cor }}
-      onPress={() => abrirWhatsApp(item)}
+      onPress={() => !isAdmin && abrirWhatsApp(item)}
       activeOpacity={0.8}
     >
       {item.destaque && (
@@ -149,7 +121,7 @@ export default function Home() {
       </View>
       
       <View className="space-y-2">
-        {item.valores.map((valor, index) => (
+        {(item.valores || []).map((valor, index) => (
           <View key={index} className="bg-white rounded-lg p-3 border-2 border-gray-300 shadow-sm">
             <Text className="text-gray-900 font-pextrabold text-xl text-center">
               R$ {valor.valor}
@@ -222,20 +194,55 @@ export default function Home() {
 
           {/* Seção de Planos */}
            <View className="px-6 py-6 bg-gradient-to-r from-blue-50 to-indigo-50">
-             <Text className="text-2xl font-pextrabold text-center mb-6 text-gray-800">
-               📋 Nossos Planos
-             </Text>
-             <Text className="text-gray-600 font-pregular text-center mb-4">
-               👆 Toque em um plano para falar conosco no WhatsApp!
-             </Text>
-             <FlatList
-               data={planos}
-               renderItem={renderPlano}
-               keyExtractor={(item) => item.id}
-               horizontal
-               showsHorizontalScrollIndicator={false}
-               contentContainerStyle={{ paddingHorizontal: 6 }}
-             />
+             <View className="flex-row items-center justify-between mb-4">
+               <Text className="text-2xl font-pextrabold text-center flex-1 text-gray-800">
+                 📋 Nossos Planos
+               </Text>
+               {isAdmin && (
+                 <TouchableOpacity
+                   onPress={() => router.push('/gerenciar-planos')}
+                   className="bg-blue-600 rounded-lg px-4 py-2 ml-2"
+                 >
+                   <Ionicons name="settings" size={20} color="white" />
+                 </TouchableOpacity>
+               )}
+             </View>
+             {!isAdmin && (
+               <Text className="text-gray-600 font-pregular text-center mb-4">
+                 👆 Toque em um plano para falar conosco no WhatsApp!
+               </Text>
+             )}
+             {loading ? (
+               <View className="py-8 items-center">
+                 <Text className="text-gray-600 font-pregular">Carregando planos...</Text>
+               </View>
+             ) : planos.length === 0 ? (
+               <View className="py-8 items-center">
+                 <Ionicons name="document-outline" size={64} color="#9CA3AF" />
+                 <Text className="text-gray-500 font-pregular text-lg text-center mt-4">
+                   Nenhum plano cadastrado
+                 </Text>
+                 {isAdmin && (
+                   <TouchableOpacity
+                     onPress={() => router.push('/gerenciar-planos')}
+                     className="bg-blue-600 rounded-lg px-6 py-3 mt-4"
+                   >
+                     <Text className="text-white font-pbold">
+                       Criar Primeiro Plano
+                     </Text>
+                   </TouchableOpacity>
+                 )}
+               </View>
+             ) : (
+               <FlatList
+                 data={planos}
+                 renderItem={renderPlano}
+                 keyExtractor={(item) => item.id}
+                 horizontal
+                 showsHorizontalScrollIndicator={false}
+                 contentContainerStyle={{ paddingHorizontal: 6 }}
+               />
+             )}
            </View>
 
 

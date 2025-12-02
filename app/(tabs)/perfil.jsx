@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -1043,124 +1044,69 @@ export default function Perfil() {
                       }
                       
                       return usuariosFiltrados.map((usuario) => (
-                      <View key={usuario.id} className="bg-white rounded-xl p-4 border-2 border-blue-300 shadow-lg mb-4">
-                        <View className="flex-row items-center justify-between mb-3">
-                          <Text className="text-gray-800 font-pextrabold text-xl">
-                            {usuario.apelido || usuario.email}
-                          </Text>
-                          <View className={`px-3 py-1 rounded-full border ${
-                            usuario.tipoUsuario === 'admin' 
-                              ? 'bg-red-100 border-red-300' 
-                              : usuario.tipoUsuario === 'personal'
-                              ? 'bg-purple-100 border-purple-300'
-                              : 'bg-blue-100 border-blue-300'
-                          }`}>
-                            <Text className={`text-xs font-pextrabold ${
-                              usuario.tipoUsuario === 'admin' 
-                                ? 'text-red-700' 
-                                : usuario.tipoUsuario === 'personal'
-                                ? 'text-purple-700'
-                                : 'text-blue-700'
-                            }`}>
-                              {usuario.tipoUsuario}
-                            </Text>
-                          </View>
-                        </View>
-                        
-                        <View className="flex-row items-center justify-between mb-4">
-                          {/* M2 Coins (para alunos e personal) */}
-                          {(usuario.tipoUsuario === 'aluno' || usuario.tipoUsuario === 'personal') && (
-                            <View className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
-                              <Text className="text-gray-600 text-sm font-pbold">
-                                M2 Coins: <Text className="text-blue-600 font-pextrabold">{usuario.m2Coins || 0}</Text>
-                              </Text>
-                            </View>
-                          )}
-                          <View className={`px-3 py-1 rounded-full border ${
-                            usuario.aprovado ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'
-                          }`}>
-                            <Text className={`text-sm font-pextrabold ${
-                              usuario.aprovado ? 'text-green-700' : 'text-yellow-700'
-                            }`}>
-                              {usuario.aprovado ? 'Aprovado' : 'Pendente'}
-                            </Text>
-                          </View>
-                        </View>
-                        
-                        <View className="space-y-2">
-                          {usuario.tipoUsuario !== 'admin' && (
-                            <>
-                              {!usuario.aprovado ? (
-                                <TouchableOpacity
-                                  onPress={() => handleApproveUser(usuario.id)}
-                                  className="bg-green-500 rounded-lg p-3 border border-green-400 shadow-sm"
-                                >
-                                  <Text className="text-white font-pextrabold text-sm text-center">
-                                    ✅ Aprovar Usuário
-                                  </Text>
-                                </TouchableOpacity>
-                              ) : (
-                                <TouchableOpacity
-                                  onPress={() => handleRejectUser(usuario.id)}
-                                  className="bg-red-500 rounded-lg p-3 border border-red-400 shadow-sm"
-                                >
-                                  <Text className="text-white font-pextrabold text-sm text-center">
-                                    🚫 Bloquear Usuário
-                                  </Text>
-                                </TouchableOpacity>
-                              )}
-                              
-                              <View className="h-3" />
-                              
-                              <TouchableOpacity
-                                onPress={() => handleSelectPlano(usuario.id)}
-                                className="bg-purple-500 rounded-lg p-3 border border-purple-400 shadow-sm"
-                              >
-                                <Text className="text-white font-pextrabold text-sm text-center">
-                                  🎯 Escolher Plano
+                        <TouchableOpacity
+                          key={usuario.id}
+                          onPress={() => router.push(`/detalhes-usuario?userId=${usuario.id}`)}
+                          className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm mb-3 active:bg-blue-50"
+                          activeOpacity={0.7}
+                        >
+                          <View className="flex-row items-center justify-between">
+                            {/* Nome e Tipo */}
+                            <View className="flex-1 mr-3">
+                              <View className="flex-row items-center mb-2">
+                                <Text className="text-gray-800 font-pextrabold text-lg flex-1">
+                                  {usuario.apelido || usuario.email}
                                 </Text>
-                              </TouchableOpacity>
-                            </>
-                          )}
-                          
-                          {/* Botão Alterar Tipo (apenas para não-admins) */}
-                          {usuario.tipoUsuario !== 'admin' && (
-                            <TouchableOpacity
-                              onPress={() => handleEditTipoUsuario(usuario.id)}
-                              className="bg-orange-500 rounded-lg p-3 border border-orange-400 shadow-sm"
-                            >
-                              <Text className="text-white font-pextrabold text-sm text-center">
-                                🔄 Alterar Tipo
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                          
-                          {/* Botão Editar M2 Coins (para alunos e personal) */}
-                          {(usuario.tipoUsuario === 'aluno' || usuario.tipoUsuario === 'personal') && (
-                            <TouchableOpacity
-                              onPress={() => handleUpdateUserCoins(usuario.id, usuario.m2Coins || 0)}
-                              className="bg-blue-500 rounded-lg p-3 border border-blue-400 shadow-sm"
-                            >
-                              <Text className="text-white font-pextrabold text-sm text-center">
-                                💰 Editar M2 Coins
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                          
-                          {/* Botão Deletar Usuário (apenas para não-admins) */}
-                          {usuario.tipoUsuario !== 'admin' && (
-                            <TouchableOpacity
-                              onPress={() => handleDeleteUser(usuario.id)}
-                              className="bg-red-600 rounded-lg p-3 border border-red-500 shadow-sm"
-                            >
-                              <Text className="text-white font-pextrabold text-sm text-center">
-                                🗑️ Deletar Usuário
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      </View>
-                    ));
+                                <View className={`px-2 py-1 rounded-full border ${
+                                  usuario.tipoUsuario === 'admin' 
+                                    ? 'bg-red-100 border-red-300' 
+                                    : usuario.tipoUsuario === 'personal'
+                                    ? 'bg-purple-100 border-purple-300'
+                                    : 'bg-blue-100 border-blue-300'
+                                }`}>
+                                  <Text className={`text-xs font-pextrabold ${
+                                    usuario.tipoUsuario === 'admin' 
+                                      ? 'text-red-700' 
+                                      : usuario.tipoUsuario === 'personal'
+                                      ? 'text-purple-700'
+                                      : 'text-blue-700'
+                                  }`}>
+                                    {usuario.tipoUsuario}
+                                  </Text>
+                                </View>
+                              </View>
+                              
+                              {/* Coins e Status */}
+                              <View className="flex-row items-center space-x-3">
+                                {(usuario.tipoUsuario === 'aluno' || usuario.tipoUsuario === 'personal') && (
+                                  <View className="flex-row items-center">
+                                    <Image 
+                                      source={require('../../assets/images/m2coin.png')} 
+                                      style={{ width: 16, height: 16, marginRight: 4 }}
+                                      resizeMode="contain"
+                                    />
+                                    <Text className="text-gray-600 text-sm font-pbold">
+                                      {usuario.m2Coins || 0}
+                                    </Text>
+                                  </View>
+                                )}
+                                <View className={`px-2 py-1 rounded-full border ${
+                                  usuario.aprovado ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'
+                                }`}>
+                                  <Text className={`text-xs font-pextrabold ${
+                                    usuario.aprovado ? 'text-green-700' : 'text-yellow-700'
+                                  }`}>
+                                    {usuario.aprovado ? 'Aprovado' : 'Pendente'}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                            
+                            {/* Ícone de seta */}
+                            <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+                          </View>
+                        </TouchableOpacity>
+                      ));
                   })()}
                   </View>
                 )}

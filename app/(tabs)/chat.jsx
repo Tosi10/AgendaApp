@@ -46,45 +46,100 @@ export default function Chat() {
     return today;
   };
 
-  // Carregar mensagens do dia atual
-  const loadTodayMessages = () => {
-    if (!user) return;
+  // Carregar últimas 10 mensagens do histórico
+  const loadRecentMessages = async () => {
+    if (!user) return () => {};
 
-    const startOfDay = getStartOfDay();
-    
-    const unsubscribe = onSnapshot(
-      query(
-        collection(db, 'chat'), 
-        where('timestamp', '>=', startOfDay),
-        orderBy('timestamp', 'asc')
-      ),
-      (snapshot) => {
-        const messagesData = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          messagesData.push({
-            id: doc.id,
-            ...data,
-            timestamp: data.timestamp?.toDate() || new Date()
-          });
+    try {
+      setLoading(true);
+      
+      // Primeiro, buscar as últimas 10 mensagens ordenadas por timestamp desc
+      const recentQuery = query(
+        collection(db, 'chat'),
+        orderBy('timestamp', 'desc'),
+        limit(10)
+      );
+
+      const snapshot = await getDocs(recentQuery);
+      const messagesData = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        messagesData.push({
+          id: doc.id,
+          ...data,
+          timestamp: data.timestamp?.toDate() || new Date()
         });
-        
-        setMessages(messagesData);
-        
-        setLoading(false);
-        
-        // Scroll para o final para mostrar mensagens mais recentes
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      },
-      (error) => {
-        console.error('Erro ao carregar mensagens:', error);
-        setLoading(false);
-      }
-    );
+      });
 
-    return unsubscribe;
+      // Reverter para ordem cronológica (mais antiga primeiro)
+      messagesData.reverse();
+      
+      setMessages(messagesData);
+      setLoading(false);
+      
+      // Verificar se há mais mensagens além das 10
+      if (messagesData.length > 0) {
+        setLastMessageTimestamp(messagesData[0].timestamp);
+        // Verificar se há mais mensagens (se retornou 10, provavelmente há mais)
+        setHasMoreMessages(messagesData.length === 10);
+      } else {
+        setHasMoreMessages(false);
+      }
+      
+      // Scroll para o final para mostrar mensagens mais recentes
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+
+      // Agora criar listener para novas mensagens do dia atual
+      const startOfDay = getStartOfDay();
+      const unsubscribe = onSnapshot(
+        query(
+          collection(db, 'chat'), 
+          where('timestamp', '>=', startOfDay),
+          orderBy('timestamp', 'asc')
+        ),
+        (snapshot) => {
+          setMessages(prev => {
+            const todayMessages = [];
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              const message = {
+                id: doc.id,
+                ...data,
+                timestamp: data.timestamp?.toDate() || new Date()
+              };
+              todayMessages.push(message);
+            });
+            
+            // Combinar mensagens antigas com novas do dia, removendo duplicatas
+            const allMessages = [...prev];
+            todayMessages.forEach(newMsg => {
+              if (!allMessages.find(m => m.id === newMsg.id)) {
+                allMessages.push(newMsg);
+              }
+            });
+            
+            // Ordenar por timestamp
+            return allMessages.sort((a, b) => a.timestamp - b.timestamp);
+          });
+          
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        },
+        (error) => {
+          console.error('Erro ao carregar mensagens do dia:', error);
+        }
+      );
+
+      return unsubscribe;
+    } catch (error) {
+      console.error('Erro ao carregar mensagens recentes:', error);
+      setLoading(false);
+      return () => {};
+    }
   };
 
   // Carregar TODAS as mensagens para contagem de não lidas
@@ -120,26 +175,35 @@ export default function Chat() {
 
   // Carregar mensagens de dias anteriores
   const loadMoreMessages = async () => {
-    if (!user || loadingMore || !hasMoreMessages) return;
+    if (!user || loadingMore) return;
 
     setLoadingMore(true);
     
     try {
-      const startOfDay = getStartOfDay();
-      let queryRef = query(
-        collection(db, 'chat'),
-        where('timestamp', '<', startOfDay),
-        orderBy('timestamp', 'desc'),
-        limit(20)
-      );
-
+      let queryRef;
+      
       if (lastMessageTimestamp) {
+        // Carregar mensagens anteriores à última mensagem carregada
         queryRef = query(
           collection(db, 'chat'),
           where('timestamp', '<', lastMessageTimestamp),
           orderBy('timestamp', 'desc'),
           limit(20)
         );
+      } else {
+        // Se não há timestamp, carregar mensagens mais antigas que a primeira da lista
+        if (messages.length > 0) {
+          const firstMessageTimestamp = messages[0].timestamp;
+          queryRef = query(
+            collection(db, 'chat'),
+            where('timestamp', '<', firstMessageTimestamp),
+            orderBy('timestamp', 'desc'),
+            limit(20)
+          );
+        } else {
+          setLoadingMore(false);
+          return;
+        }
       }
 
       const snapshot = await getDocs(queryRef);
@@ -155,24 +219,25 @@ export default function Chat() {
       });
 
       if (newMessages.length > 0) {
-        setLastMessageTimestamp(newMessages[newMessages.length - 1].timestamp);
+        const oldestNewMessage = newMessages[newMessages.length - 1];
+        setLastMessageTimestamp(oldestNewMessage.timestamp);
         setMessages(prev => [...newMessages.reverse(), ...prev]);
+        setHasMoreMessages(true);
       } else {
         setHasMoreMessages(false);
       }
     } catch (error) {
       console.error('Erro ao carregar mais mensagens:', error);
+      setHasMoreMessages(false);
     } finally {
       setLoadingMore(false);
     }
   };
 
-  // Reset quando a aba ganhar foco (igual ao perfil)
+  // Reset quando a aba ganhar foco - recarregar últimas 10 mensagens
   useFocusEffect(
     React.useCallback(() => {
-      if (__DEV__) console.log('🔄 Aba Chat ganhou foco - Resetando para mensagens do dia');
-      setHasMoreMessages(true);
-      setLastMessageTimestamp(null);
+      if (__DEV__) console.log('🔄 Aba Chat ganhou foco - Carregando últimas 10 mensagens');
       // Limpar badge de mensagens não lidas
       clearUnreadCount();
     }, [])
@@ -182,15 +247,40 @@ export default function Chat() {
   useEffect(() => {
     if (!user) return;
     
-    // Carregar mensagens do dia atual para exibição
-    const unsubscribeToday = loadTodayMessages();
+    let unsubscribeRecent = null;
+    let unsubscribeAll = null;
+    let lastDayChecked = new Date().getDate();
     
-    // Carregar todas as mensagens para contagem de não lidas
-    const unsubscribeAll = loadAllMessagesForUnreadCount();
+    // Função para inicializar
+    const initialize = async () => {
+      // Carregar últimas 10 mensagens do histórico
+      unsubscribeRecent = await loadRecentMessages();
+      
+      // Carregar todas as mensagens para contagem de não lidas
+      unsubscribeAll = loadAllMessagesForUnreadCount();
+    };
+    
+    initialize();
+    
+    // Monitorar mudança de dia - recarregar quando detectar mudança
+    const dayCheckInterval = setInterval(() => {
+      const currentDay = new Date().getDate();
+      // Se mudou o dia, recarregar mensagens
+      if (currentDay !== lastDayChecked) {
+        lastDayChecked = currentDay;
+        if (unsubscribeRecent) {
+          unsubscribeRecent();
+        }
+        loadRecentMessages().then(unsub => {
+          unsubscribeRecent = unsub;
+        });
+      }
+    }, 30000); // Verificar a cada 30 segundos
     
     return () => {
-      unsubscribeToday();
-      unsubscribeAll();
+      if (unsubscribeRecent) unsubscribeRecent();
+      if (unsubscribeAll) unsubscribeAll();
+      clearInterval(dayCheckInterval);
     };
   }, [user]);
 
@@ -355,15 +445,15 @@ export default function Chat() {
             </View>
           ) : (
             <View>
-              {/* Botão para carregar mensagens anteriores */}
-              {hasMoreMessages && (
+              {/* Botão para carregar mensagens anteriores - sempre visível se houver mensagens */}
+              {messages.length > 0 && (
                 <TouchableOpacity 
                   style={styles.loadMoreButton}
                   onPress={loadMoreMessages}
-                  disabled={loadingMore}
+                  disabled={loadingMore || !hasMoreMessages}
                 >
                   <Text style={styles.loadMoreText}>
-                    {loadingMore ? 'Carregando...' : 'Carregar mensagens anteriores'}
+                    {loadingMore ? 'Carregando...' : hasMoreMessages ? 'Carregar mensagens anteriores' : 'Não há mais mensagens'}
                   </Text>
                 </TouchableOpacity>
               )}

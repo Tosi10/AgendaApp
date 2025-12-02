@@ -33,6 +33,27 @@
     },
     "production": {
       "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENVIRONMENT": "production"
+      }
+    },
+    "production-android": {
+      "android": {
+        "buildType": "apk"
+      },
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ENVIRONMENT": "production"
+      }
+    },
+    "production-aab": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "production"
       }
