@@ -2,7 +2,7 @@
   "expo": {
     "name": "M2 Academia",
     "slug": "agendaapp",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/m2chat.png",
     "userInterfaceStyle": "light",
@@ -34,7 +34,7 @@
       },
       "icon": "./assets/images/m2chat.png",
       "package": "com.m2academia.agendaapp",
-      "versionCode": 4,
+      "versionCode": 5,
       "permissions": []
     },
     "web": {

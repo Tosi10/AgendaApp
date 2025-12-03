@@ -260,6 +260,13 @@ export default function Perfil() {
         users.push(userData);
       });
       
+      // Ordenar alfabeticamente por apelido ou email
+      users.sort((a, b) => {
+        const nomeA = (a.apelido || a.email || '').toLowerCase();
+        const nomeB = (b.apelido || b.email || '').toLowerCase();
+        return nomeA.localeCompare(nomeB, 'pt-BR');
+      });
+      
       if (__DEV__) console.log('✅ Lista de usuários atualizada:', users.length);
       setTodosUsuarios(users);
       setLoadingUsuarios(false);
@@ -1051,56 +1058,43 @@ export default function Perfil() {
                           activeOpacity={0.7}
                         >
                           <View className="flex-row items-center justify-between">
-                            {/* Nome e Tipo */}
-                            <View className="flex-1 mr-3">
-                              <View className="flex-row items-center mb-2">
-                                <Text className="text-gray-800 font-pextrabold text-lg flex-1">
-                                  {usuario.apelido || usuario.email}
-                                </Text>
-                                <View className={`px-2 py-1 rounded-full border ${
-                                  usuario.tipoUsuario === 'admin' 
-                                    ? 'bg-red-100 border-red-300' 
-                                    : usuario.tipoUsuario === 'personal'
-                                    ? 'bg-purple-100 border-purple-300'
-                                    : 'bg-blue-100 border-blue-300'
-                                }`}>
-                                  <Text className={`text-xs font-pextrabold ${
-                                    usuario.tipoUsuario === 'admin' 
-                                      ? 'text-red-700' 
-                                      : usuario.tipoUsuario === 'personal'
-                                      ? 'text-purple-700'
-                                      : 'text-blue-700'
-                                  }`}>
-                                    {usuario.tipoUsuario}
-                                  </Text>
-                                </View>
-                              </View>
-                              
-                              {/* Coins e Status */}
-                              <View className="flex-row items-center space-x-3">
-                                {(usuario.tipoUsuario === 'aluno' || usuario.tipoUsuario === 'personal') && (
-                                  <View className="flex-row items-center">
-                                    <Image 
-                                      source={require('../../assets/images/m2coin.png')} 
-                                      style={{ width: 16, height: 16, marginRight: 4 }}
-                                      resizeMode="contain"
-                                    />
-                                    <Text className="text-gray-600 text-sm font-pbold">
-                                      {usuario.m2Coins || 0}
-                                    </Text>
-                                  </View>
-                                )}
-                                <View className={`px-2 py-1 rounded-full border ${
-                                  usuario.aprovado ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'
-                                }`}>
-                                  <Text className={`text-xs font-pextrabold ${
-                                    usuario.aprovado ? 'text-green-700' : 'text-yellow-700'
-                                  }`}>
-                                    {usuario.aprovado ? 'Aprovado' : 'Pendente'}
-                                  </Text>
-                                </View>
-                              </View>
+                            {/* Nome */}
+                            <Text className="text-gray-800 font-pextrabold text-lg flex-1 mr-3">
+                              {usuario.apelido || usuario.email}
+                            </Text>
+                            
+                            {/* Tipo de Usuário */}
+                            <View className={`px-2 py-1 rounded-full border mr-3 ${
+                              usuario.tipoUsuario === 'admin' 
+                                ? 'bg-red-100 border-red-300' 
+                                : usuario.tipoUsuario === 'personal'
+                                ? 'bg-purple-100 border-purple-300'
+                                : 'bg-blue-100 border-blue-300'
+                            }`}>
+                              <Text className={`text-xs font-pextrabold ${
+                                usuario.tipoUsuario === 'admin' 
+                                  ? 'text-red-700' 
+                                  : usuario.tipoUsuario === 'personal'
+                                  ? 'text-purple-700'
+                                  : 'text-blue-700'
+                              }`}>
+                                {usuario.tipoUsuario}
+                              </Text>
                             </View>
+                            
+                            {/* Coins */}
+                            {(usuario.tipoUsuario === 'aluno' || usuario.tipoUsuario === 'personal') && (
+                              <View className="flex-row items-center mr-3">
+                                <Image 
+                                  source={require('../../assets/images/m2coin.png')} 
+                                  style={{ width: 18, height: 18, marginRight: 4 }}
+                                  resizeMode="contain"
+                                />
+                                <Text className="text-gray-600 text-base font-pbold">
+                                  {usuario.m2Coins || 0}
+                                </Text>
+                              </View>
+                            )}
                             
                             {/* Ícone de seta */}
                             <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />

@@ -169,16 +169,19 @@ export default function GerenciarPlanos() {
         destaque,
         ordem: ordem || planos.length,
         valores,
-        dataCriacao: editingPlano ? undefined : new Date(),
         ultimaAtualizacao: new Date()
       };
 
       if (editingPlano) {
-        // Atualizar
+        // Atualizar - manter dataCriacao original se existir
+        if (editingPlano.dataCriacao) {
+          planoData.dataCriacao = editingPlano.dataCriacao;
+        }
         await updateDoc(doc(db, 'planos', editingPlano.id), planoData);
         Alert.alert('Sucesso', 'Plano atualizado com sucesso!');
       } else {
-        // Criar
+        // Criar - adicionar dataCriacao apenas na criação
+        planoData.dataCriacao = new Date();
         await addDoc(collection(db, 'planos'), planoData);
         Alert.alert('Sucesso', 'Plano criado com sucesso!');
       }

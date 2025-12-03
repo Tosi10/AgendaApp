@@ -152,3 +152,65 @@ Aproveite para treinar com seus colegas!
 ```
 🎯 Personal Training agora com agendamento em grupo (até 6 alunos)! Interface aprimorada + correções de bugs.
 ```
+
+---
+
+# Notas de Versão - M2 Academia v1.0.5
+
+## O que há de novo nesta versão
+
+### 🎛️ Painel Administrativo Aprimorado
+- Lista simplificada de usuários em formato compacto
+- Visualização rápida: nome, tipo, M2 Coins e status em uma linha
+- Página dedicada de detalhes do usuário com histórico completo
+- Histórico de planos e aulas por usuário
+- Navegação mais intuitiva e profissional
+
+### 📋 Gerenciamento de Planos
+- Administradores podem criar, editar e deletar planos diretamente no app
+- Planos armazenados no Firebase para atualizações em tempo real
+- Edição de valores, nomes, cores e configurações dos planos
+- Promoções e ajustes de planos sem necessidade de atualização do app
+
+### 💬 Melhorias no Chat
+- Últimas 10 mensagens carregadas automaticamente ao abrir o chat
+- Botão "Carregar mais mensagens" sempre visível
+- Melhor experiência de navegação nas conversas
+
+### 🎨 Melhorias Visuais
+- Ícone M2 Coins atualizado com imagem oficial
+- Melhor espaçamento e organização dos elementos
+- Interface mais limpa e profissional
+
+### ⚡ Correções e Otimizações
+- Correções de bugs para melhor estabilidade
+- Melhorias na sincronização de dados
+- Otimização do desempenho geral
+
+---
+
+## Texto para App Store Connect (v1.0.5)
+
+### Versão Recomendada (para o campo "O que há de novo")
+```
+🎛️ Painel Administrativo Aprimorado
+
+Nova interface administrativa mais profissional e eficiente:
+• Lista simplificada de usuários em formato compacto
+• Página dedicada de detalhes com histórico completo de planos e aulas
+• Visualização rápida de informações importantes
+
+📋 Gerenciamento de Planos
+
+Administradores agora podem gerenciar planos diretamente no app:
+• Criar, editar e deletar planos sem atualizar o app
+• Ajustar valores e configurações em tempo real
+• Criar promoções facilmente
+
+💬 Melhorias no Chat
+
+• Últimas 10 mensagens carregadas automaticamente
+• Navegação mais fluida nas conversas
+
+🎨 Melhorias visuais e correções de bugs para uma experiência ainda melhor!
+```
