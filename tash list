@@ -1,5 +1,0 @@
-[33m9b7c9d5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m build feito
-[33m8befa51[m feat: implement complete scheduling system with Firebase persistence
-[33m4070e4e[m feat: improve auth screens design with gradient overlay and better image positioning
-[33mbfd85b9[m feat: NativeWind configurado e funcionando - cores personalizadas aplicadas na tela principal
-[33mc7cce2d[m Initial commit: React Native app with Firebase authentication
